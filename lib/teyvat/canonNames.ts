@@ -45,7 +45,6 @@ const CHINESE_NAMES: readonly string[] = [
   "砂糖",
   "莫娜",
   "阿贝多",
-  "罗莎莉亚",
   "优菈",
   "迪奥娜",
   "雷泽",
@@ -203,7 +202,6 @@ export function matchesCanonName(value: string): string | null {
   }
 
   const valueIsAscii = isAscii(trimmed);
-  const lowerValue = trimmed.toLowerCase();
 
   for (const canon of CANON_NAMES) {
     const canonIsAscii = isAscii(canon);
@@ -226,13 +224,12 @@ export function matchesCanonName(value: string): string | null {
         return canon;
       }
       for (let len = 2; len < trimmed.length; len++) {
-        if (canon.includes(trimmed.slice(0, len))) {
+        if (canon.startsWith(trimmed.slice(0, len))) {
           return canon;
         }
       }
     }
 
-    void lowerValue;
   }
 
   return null;

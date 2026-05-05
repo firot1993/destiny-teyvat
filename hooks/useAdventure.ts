@@ -34,6 +34,7 @@ export type AdventurePhase =
 export interface UseAdventureResult {
   phase: AdventurePhase;
   character: RevealedCharacter | null;
+  characterImageUrl: string | null;
   adventure: AdventureState | null;
   library: AdventureState[];
   streamingText: string;
@@ -128,6 +129,7 @@ export function useAdventure(): UseAdventureResult {
   const [provider, setProviderState] = useState(DEFAULT_PROVIDER);
   const [model, setModelState] = useState(() => defaultModel(DEFAULT_PROVIDER));
   const [hasSavedAdventure, setHasSavedAdventure] = useState(false);
+  const [characterImageUrl, setCharacterImageUrl] = useState<string | null>(null);
 
   const refreshLibrary = useCallback(() => {
     setLibrary(loadLibrary());
@@ -179,6 +181,29 @@ export function useAdventure(): UseAdventureResult {
       return text;
     },
     [model, provider, updateQuotaHeaders]
+  );
+
+  const generateCharacterImage = useCallback(
+    async (char: RevealedCharacter) => {
+      try {
+        const prompt = `Genshin Impact official character portrait, anime illustration style. A ${char.vision} vision wielder from ${char.nation}, using a ${char.weapon}. ${char.archetype}. ${char.bio} Genshin Impact art style, high quality, detailed character illustration, fantasy RPG, upper body portrait, dramatic lighting. No text, no words, no letters, no watermarks, no signatures, no captions in the image.`;
+        const response = await fetch("/api/imagine", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt }),
+        });
+        if (!response.ok) {
+          return;
+        }
+        const data = (await response.json()) as { url?: string };
+        if (data.url) {
+          setCharacterImageUrl(data.url);
+        }
+      } catch {
+        // Image generation is best-effort — never block the reveal flow.
+      }
+    },
+    []
   );
 
   const streamScene = useCallback(
@@ -387,12 +412,15 @@ export function useAdventure(): UseAdventureResult {
         saveAdventure(nextAdventure);
         setHasSavedAdventure(true);
         setPhase("reveal-shown");
+
+        // Fire-and-forget image generation — never blocks the reveal flow.
+        void generateCharacterImage(parsed.character);
       } catch (requestError) {
         setError(requestError instanceof Error ? requestError.message : "Reveal failed.");
         setPhase("questionnaire");
       }
     },
-    [callJsonModel]
+    [callJsonModel, generateCharacterImage]
   );
 
   const enterWorld = useCallback(
@@ -467,6 +495,7 @@ export function useAdventure(): UseAdventureResult {
     }
     clearAdventure();
     setCharacter(null);
+    setCharacterImageUrl(null);
     setAdventure(null);
     setStreamingText("");
     setError(null);
@@ -548,6 +577,7 @@ export function useAdventure(): UseAdventureResult {
   return {
     phase,
     character,
+    characterImageUrl,
     adventure,
     library,
     streamingText,

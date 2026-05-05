@@ -15,10 +15,11 @@ import {
 
 interface Props {
   character: RevealedCharacter;
+  imageUrl?: string | null;
   onAdvance: () => void;
 }
 
-export function RevealCard({ character, onAdvance }: Props) {
+export function RevealCard({ character, imageUrl, onAdvance }: Props) {
   const { t, lang } = useI18n();
   const [beat, setBeat] = useState(0);
   const theme = themeForVision(character.vision);
@@ -58,6 +59,17 @@ export function RevealCard({ character, onAdvance }: Props) {
               {character.nation} · {character.weapon} · {character.archetype}
             </p>
           </>
+        ) : null}
+
+        {beat >= 2 && imageUrl ? (
+          <div style={portraitWrap}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt={character.name}
+              style={portraitImg}
+            />
+          </div>
         ) : null}
 
         {beat >= 3 ? <p style={bioStyle}>{character.bio}</p> : null}
@@ -197,4 +209,19 @@ const advanceBtn: React.CSSProperties = {
   textTransform: "uppercase",
   letterSpacing: "0.12em",
   fontSize: 12,
+};
+
+const portraitWrap: React.CSSProperties = {
+  marginTop: 16,
+  marginBottom: 4,
+  display: "flex",
+  justifyContent: "center",
+};
+
+const portraitImg: React.CSSProperties = {
+  width: "100%",
+  maxWidth: 420,
+  borderRadius: 6,
+  boxShadow: "0 8px 32px rgba(31,27,21,0.12)",
+  objectFit: "cover",
 };

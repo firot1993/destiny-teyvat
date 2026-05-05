@@ -24,6 +24,7 @@ export default function Page() {
   const {
     phase,
     character,
+    characterImageUrl,
     adventure,
     library,
     streamingText,
@@ -134,7 +135,7 @@ export default function Page() {
       ) : null}
 
       {phase === "reveal-shown" && character ? (
-        <RevealCard character={character} onAdvance={() => void enterWorld(lang)} />
+        <RevealCard character={character} imageUrl={characterImageUrl} onAdvance={() => void enterWorld(lang)} />
       ) : null}
 
       {(phase === "scene-generating" || phase === "scene-shown") && adventure ? (

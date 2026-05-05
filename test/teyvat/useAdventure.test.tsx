@@ -58,7 +58,15 @@ afterEach(() => {
 
 function mockFetchSequence(responses: Response[]) {
   let index = 0;
-  vi.spyOn(global, "fetch").mockImplementation(async () => {
+  vi.spyOn(global, "fetch").mockImplementation(async (input) => {
+    // Image generation is fire-and-forget; return a no-op response.
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : (input as Request).url;
+    if (url.includes("/api/imagine")) {
+      return new Response(JSON.stringify({ url: null }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     const response = responses[index];
     index += 1;
     if (!response) {

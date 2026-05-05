@@ -32,6 +32,16 @@ The logic described here comes primarily from these files:
 - `lib/providers.ts`
 - `types/index.ts`
 
+### Reveal Naming (added 2026-05-05)
+
+`buildRevealPrompt` enforces three naming policies in addition to the original schema constraints:
+
+- A nation-by-nation naming-convention table (Mondstadt → Germanic, Liyue → Chinese, Inazuma → Japanese-phonetic, Sumeru → Persian/Arabic/South Asian, Fontaine → French, Natlan → Mesoamerican, Snezhnaya → Slavic, wandering → free choice). The model is told to follow the table for the chosen nation.
+- An element-word ban for the `name` field (no 霜/冰/雪 for Cryo, no 焰/火 for Pyro, no Storm/Sturm for Electro, etc.). Element-coded language is allowed in the title, vision story, and signature — not the name.
+- A reuse ban on canonical Genshin character names. Backed by a deterministic blocklist in `lib/teyvat/canonNames.ts` checked by `parseReveal` after schema validation; collisions return `ok: false` with a specific error, which the existing single corrective retry in `useAdventure.submitQuestionnaire` feeds back into the model.
+
+The reveal schema also gained a `title` field (the in-world epithet, e.g. 神里绫华「白鹭氷華」). It is rendered on the reveal card directly under the name with `「」` brackets in Chinese and em-dashes in English.
+
 The key data shapes discussed below are:
 
 - `QuestionnaireAnswers`

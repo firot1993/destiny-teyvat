@@ -363,7 +363,8 @@ export function useAdventure(): UseAdventureResult {
         let parsed = parseReveal(firstRaw, framing);
 
         if (!parsed.ok) {
-          const retryPrompt = `${prompt}\n\nYour previous answer was malformed. Return valid JSON only, matching the schema exactly.`;
+          const errorList = parsed.errors.map((e) => `- ${e}`).join("\n");
+          const retryPrompt = `${prompt}\n\nYour previous answer had these problems:\n${errorList}\n\nReturn valid JSON only, matching the schema exactly, with all problems above fixed.`;
           const retryRaw = await callJsonModel([{ role: "user", content: retryPrompt }], REVEAL_MAX_TOKENS);
           parsed = parseReveal(retryRaw, framing);
         }

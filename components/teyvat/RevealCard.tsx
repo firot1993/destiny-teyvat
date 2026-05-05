@@ -19,7 +19,7 @@ interface Props {
 }
 
 export function RevealCard({ character, onAdvance }: Props) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [beat, setBeat] = useState(0);
   const theme = themeForVision(character.vision);
 
@@ -44,6 +44,11 @@ export function RevealCard({ character, onAdvance }: Props) {
           <>
             <p style={{ ...eyebrow, color: theme.emphasis }}>{character.vision}</p>
             <h1 style={nameStyle}>{character.name}</h1>
+            {character.title ? (
+              <p style={titleStyle}>
+                {lang === "zh" ? `「${character.title}」` : `— ${character.title} —`}
+              </p>
+            ) : null}
           </>
         ) : null}
 
@@ -116,6 +121,16 @@ const nameStyle: React.CSSProperties = {
   fontSize: "clamp(3rem, 7vw, 4.6rem)",
   marginTop: 8,
   lineHeight: 0.96,
+};
+
+const titleStyle: React.CSSProperties = {
+  fontFamily: FONT_DISPLAY,
+  color: INK_SOFT,
+  fontSize: 18,
+  fontStyle: "italic",
+  marginTop: 6,
+  marginBottom: 0,
+  letterSpacing: "0.04em",
 };
 
 const metaLine: React.CSSProperties = {

@@ -47,6 +47,7 @@ Skip docs for trivial edits and typo-only changes. Prefer updating an existing f
 - `buildRevealPrompt(...)` + `parseReveal(...)` handle the character reveal card.
 - `buildScenePrompt(...)` + `parseSceneStream(...)` handle scene generation and streaming-tag parsing.
 - The reveal prompt contains the editable soft mapping table from questionnaire answers to in-world signals.
+- The reveal prompt also enforces nation-specific naming conventions, bans element words in the `name` field, and rejects names that collide with the canonical Genshin roster via `lib/teyvat/canonNames.ts`. The reveal schema includes a `title` epithet field rendered with `「」` brackets in Chinese and em-dashes in English.
 
 ### Providers And Quotas
 

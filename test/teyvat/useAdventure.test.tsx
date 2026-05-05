@@ -5,6 +5,7 @@ import { ADVENTURE_STORAGE_KEY } from "@/lib/constants";
 
 const REVEAL_JSON = JSON.stringify({
   name: "Yuna",
+  title: "The Quiet Cartographer",
   vision: "Cryo",
   nation: "Inazuma",
   weapon: "polearm",
@@ -148,6 +149,7 @@ describe("useAdventure", () => {
         character: {
           framing: "protagonist",
           name: "Yuna",
+          title: "The Quiet Cartographer",
           vision: "Cryo",
           nation: "Inazuma",
           weapon: "polearm",

@@ -32,6 +32,7 @@ describe("buildRevealPrompt", () => {
     expect(prompt).toContain('"vision"');
     expect(prompt).toContain('"nation"');
     expect(prompt).toContain('"knownAssociate"');
+    expect(prompt).toContain('"title"');
   });
 
   it("specifies the output language", () => {
@@ -40,17 +41,42 @@ describe("buildRevealPrompt", () => {
     expect(en).toMatch(/English/i);
     expect(zh).toMatch(/Chinese|中文/i);
   });
+
+  it("describes nation naming conventions", () => {
+    const prompt = buildRevealPrompt(ANSWERS, "protagonist", "en");
+    expect(prompt.toLowerCase()).toContain("naming convention");
+    expect(prompt).toContain("Inazuma");
+    expect(prompt).toContain("Liyue");
+  });
+
+  it("forbids element words in names", () => {
+    const prompt = buildRevealPrompt(ANSWERS, "protagonist", "en");
+    expect(prompt.toLowerCase()).toContain("element word");
+  });
+
+  it("describes the title field with examples", () => {
+    const prompt = buildRevealPrompt(ANSWERS, "protagonist", "en");
+    expect(prompt.toLowerCase()).toContain("title");
+    expect(prompt).toContain("「");
+  });
+
+  it("forbids reusing canonical character names", () => {
+    const prompt = buildRevealPrompt(ANSWERS, "protagonist", "en");
+    expect(prompt.toLowerCase()).toContain("canonical");
+  });
 });
 
 describe("parseReveal", () => {
   const validJson = JSON.stringify({
     name: "Yuna",
+    title: "The Quiet Cartographer",
     vision: "Cryo",
     nation: "Inazuma",
     weapon: "polearm",
     archetype: "Wandering Cartographer",
     bio: "Yuna walks the coastal roads. Her maps outlive rulers.",
-    visionStory: "She drew the cliff line once more. The wave rose without mercy. The ice answered in her hand before the storm could swallow the name she was trying to keep.",
+    visionStory:
+      "She drew the cliff line once more. The wave rose without mercy. The ice answered in her hand before the storm could swallow the name she was trying to keep.",
     constellation: "Lantern of Quiet Hours",
     signature: "A blade of ice that remembers the last hand it held.",
     knownAssociate: "",
@@ -61,6 +87,7 @@ describe("parseReveal", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.character.name).toBe("Yuna");
+      expect(result.character.title).toBe("The Quiet Cartographer");
       expect(result.character.framing).toBe("protagonist");
     }
   });
@@ -83,11 +110,35 @@ describe("parseReveal", () => {
   });
 
   it("attaches the framing to the parsed character", () => {
-    const companion = JSON.stringify({ ...JSON.parse(validJson), knownAssociate: "Wanderer — a mirror in motion" });
+    const companion = JSON.stringify({
+      ...JSON.parse(validJson),
+      knownAssociate: "Wanderer — a mirror in motion",
+    });
     const result = parseReveal(companion, "companion");
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.character.framing).toBe("companion");
     }
+  });
+
+  it("rejects when the name collides with a canonical character", () => {
+    const collision = JSON.stringify({ ...JSON.parse(validJson), name: "Furina" });
+    const result = parseReveal(collision, "protagonist");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors.some((e) => /canonical/i.test(e))).toBe(true);
+    }
+  });
+
+  it("rejects when the title collides with a canonical character", () => {
+    const collision = JSON.stringify({ ...JSON.parse(validJson), title: "Hydro Archon Furina" });
+    const result = parseReveal(collision, "protagonist");
+    expect(result.ok).toBe(false);
+  });
+
+  it("does NOT trip the canon check on a Chinese-substring false positive that shares no canon", () => {
+    const safe = JSON.stringify({ ...JSON.parse(validJson), name: "霜见" });
+    const result = parseReveal(safe, "protagonist");
+    expect(result.ok).toBe(true);
   });
 });

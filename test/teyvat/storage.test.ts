@@ -11,6 +11,7 @@ const STATE: AdventureState = {
   character: {
     framing: "protagonist",
     name: "Yuna",
+    title: "The Quiet Cartographer",
     vision: "Cryo",
     nation: "Inazuma",
     weapon: "polearm",

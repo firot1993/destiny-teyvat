@@ -6,6 +6,7 @@ import {
 } from "@/lib/teyvat/character";
 import type { AdventureState } from "@/lib/teyvat/scenes";
 import { TEYVAT_STEPS, type TeyvatAnswers } from "@/lib/teyvat/questionnaire";
+import { matchesCanonName } from "@/lib/teyvat/canonNames";
 
 const LANG_NAMES: Record<Language, string> = {
   en: "English",
@@ -31,6 +32,32 @@ Soft mapping hints (use as inspiration, not rules):
 - Q "break = laughter you didn't expect" -> Anemo affinity, Mondstadt-leaning release
 
 Blend across all seven answers. No single answer is deterministic.
+`.trim();
+
+const NAMING_CONVENTIONS = `
+Naming conventions by nation:
+- Mondstadt: Germanic/European (Diluc, Jean, Klee, Albedo, Eula, Kaeya)
+- Liyue: Chinese, two or three characters (甘雨, 钟离, 凝光, 行秋, 申鹤)
+- Inazuma: Japanese phonetic, often family + given (神里绫华, 八重神子, 早柚, 九条裟罗)
+- Sumeru: Persian/Arabic/South Asian (Nahida, Tighnari, Cyno, Dehya, Layla)
+- Fontaine: French (Furina, Lyney, Lynette, Wriothesley, Clorinde)
+- Natlan: Mesoamerican-inspired (Mavuika, Kachina, Kinich, Mualani)
+- Snezhnaya: Russian / Slavic (Tartaglia, Pulcinella, Arlecchino)
+- wandering: pick the convention that best fits the character's origin hint in their bio
+`.trim();
+
+const TITLE_GUIDANCE = `
+"title" is the character's in-world epithet — the second name they're known by. Examples:
+- 神里绫华「白鹭氷华」
+- 甘雨「循循守月」
+- 八重神子「宫司大人」
+- Diluc 「Darknight Hero」
+- Furina 「Hydro Archon」
+
+The title is what others call them, or what their reputation is. It should:
+- Reference their role, deed, or bearing — not their element directly
+- Be 2-6 characters in Chinese, or 2-4 words in English
+- Feel earned, not decorative
 `.trim();
 
 interface PacingHint {
@@ -93,6 +120,8 @@ ${answersBlock(answers)}
 
 ${MAPPING_HINTS}
 
+${NAMING_CONVENTIONS}
+
 ${framingInstructions}
 
 Output language: ${outputLanguage}.
@@ -103,15 +132,22 @@ Constraints:
 - "vision" must be one of: Anemo, Geo, Electro, Dendro, Hydro, Pyro, Cryo.
 - "nation" must be one of: Mondstadt, Liyue, Inazuma, Sumeru, Fontaine, Natlan, Snezhnaya, wandering.
 - "weapon" must be one of: sword, claymore, polearm, bow, catalyst.
+- The name must follow the nation's naming convention above. A Liyue character must have a Chinese name; an Inazuma character must have a Japanese-phonetic name; a Mondstadt character must have a Germanic/European name; etc.
+- Do not put element words in the name (no 霜/冰/雪 for Cryo, no 焰/火 for Pyro, no Storm/Sturm for Electro, etc.). The element shows up in the title, vision story, and signature — not the name itself.
+- Avoid pure mood-word names (霜凛, Frostbite, Sturmherz). Real Teyvat names sound like names, not attributes.
+- The name and title must not match, contain, or be a short form of any canonical Genshin character. The canonical examples in this prompt are for texture only — do not reuse them.
 - "bio" should be 2-3 sentences of evocative character framing.
 - "visionStory" must be a 3-4 sentence Vision-acquisition vignette in-scene, sensory, with the Vision answering at the climax.
 - "constellation" must be 2-4 words in an evocative Genshin-like naming texture.
 - "signature" must be one short line of flavor, not mechanics.
 - Return JSON only. No prose before or after. No code fences.
 
+${TITLE_GUIDANCE}
+
 Return this exact schema:
 {
   "name": "...",
+  "title": "...",
   "vision": "Cryo",
   "nation": "Inazuma",
   "weapon": "polearm",
@@ -160,12 +196,30 @@ export function parseReveal(raw: string, framing: Framing): RevealParseResult {
       (error) => error !== "knownAssociate is required when framing is 'companion'"
     );
     if (nonFlavorErrors.length === 0) {
-      return { ok: true, character: candidate };
+      return checkCanonCollisions(candidate);
     }
     return { ok: false, errors: validation.errors };
   }
 
-  return { ok: true, character: candidate };
+  return checkCanonCollisions(candidate);
+}
+
+function checkCanonCollisions(character: RevealedCharacter): RevealParseResult {
+  const nameMatch = matchesCanonName(character.name);
+  const titleMatch = matchesCanonName(character.title);
+
+  if (!nameMatch && !titleMatch) {
+    return { ok: true, character };
+  }
+
+  const errors: string[] = [];
+  if (nameMatch) {
+    errors.push(`name '${character.name}' collides with canonical Genshin character '${nameMatch}' — pick a different name.`);
+  }
+  if (titleMatch) {
+    errors.push(`title '${character.title}' collides with canonical Genshin character '${titleMatch}' — pick a different title.`);
+  }
+  return { ok: false, errors };
 }
 
 function pacingFor(sceneNumber: number): PacingHint {

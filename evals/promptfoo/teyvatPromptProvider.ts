@@ -36,6 +36,7 @@ const DEFAULT_ANSWERS: TeyvatAnswers = {
 const DEFAULT_CHARACTER: RevealedCharacter = {
   framing: "protagonist",
   name: "Yuna",
+  title: "The Quiet Cartographer",
   vision: "Cryo",
   nation: "Inazuma",
   weapon: "polearm",

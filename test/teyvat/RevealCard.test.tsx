@@ -7,6 +7,7 @@ import type { RevealedCharacter } from "@/lib/teyvat/character";
 const CHARACTER: RevealedCharacter = {
   framing: "companion",
   name: "Yuna",
+  title: "The Quiet Cartographer",
   vision: "Cryo",
   nation: "Inazuma",
   weapon: "polearm",

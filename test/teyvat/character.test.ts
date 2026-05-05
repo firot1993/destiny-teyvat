@@ -7,6 +7,7 @@ import {
 const VALID: RevealedCharacter = {
   framing: "protagonist",
   name: "Yuna",
+  title: "The Quiet Cartographer",
   vision: "Cryo",
   nation: "Inazuma",
   weapon: "polearm",
@@ -49,6 +50,20 @@ describe("validateRevealedCharacter", () => {
 
   it("rejects empty visionStory", () => {
     const result = validateRevealedCharacter({ ...VALID, visionStory: "" });
+    expect(result.ok).toBe(false);
+  });
+
+  it("rejects empty title", () => {
+    const result = validateRevealedCharacter({ ...VALID, title: "" });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors.some((e) => /title/i.test(e))).toBe(true);
+    }
+  });
+
+  it("rejects missing title", () => {
+    const { title: _omitted, ...withoutTitle } = VALID;
+    const result = validateRevealedCharacter(withoutTitle);
     expect(result.ok).toBe(false);
   });
 });

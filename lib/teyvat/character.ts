@@ -12,6 +12,7 @@ export type Framing = "protagonist" | "companion";
 export interface RevealedCharacter {
   framing: Framing;
   name: string;
+  title: string;
   vision: Vision;
   nation: Nation;
   weapon: Weapon;
@@ -39,13 +40,14 @@ export function validateRevealedCharacter(value: unknown): ValidationResult {
 
   for (const field of [
     "name",
+    "title",
     "archetype",
     "bio",
     "visionStory",
     "constellation",
     "signature",
   ] as const) {
-    if (typeof candidate[field] !== "string" || candidate[field].trim() === "") {
+    if (typeof candidate[field] !== "string" || (candidate[field] as string).trim() === "") {
       errors.push(`${field} must be a non-empty string`);
     }
   }

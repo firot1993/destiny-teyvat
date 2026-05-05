@@ -1,0 +1,205 @@
+[
+  {
+    "id": "independent-builder",
+    "description": "Early-career builder choosing visibility before feeling ready.",
+    "lang": "en",
+    "guidance": 7,
+    "signatureAuthor": "Rachel Cusk",
+    "fields": {
+      "age": "20-29",
+      "mobility": "Can relocate for the right upside",
+      "currentMode": "Early-career builder",
+      "trajectoryFocus": "Turning skill into real leverage",
+      "hiddenEdge": "Runway that buys patience, taste that arrives before status",
+      "recurringTrap": "Waiting for certainty that never arrives",
+      "costWillingness": "Visibility before I feel ready",
+      "magneticScene": "A small room where one thing gets better every week",
+      "socialMirror": "That the quiet period was not stagnation",
+      "obsessions": "Leverage that keeps paying after the effort ends",
+      "delayFailureMode": "Waiting for certainty that never arrives",
+      "inflection": "A stranger bets on me before the proof is in",
+      "location": "Can relocate for the right upside",
+      "skills": "",
+      "resources": "Runway that buys patience, taste that arrives before status",
+      "constraints": "Waiting for certainty that never arrives",
+      "workStyle": "A small room where one thing gets better every week",
+      "riskTolerance": "Visibility before I feel ready",
+      "timeHorizon": "That the quiet period was not stagnation"
+    },
+    "big5": [9, 7, 3, 4, 8],
+    "curationAnswers": {
+      "whyThese": "They feel dangerous but true.",
+      "rejectedFuture": "A polished life that never risks being seen."
+    },
+    "selectedFragments": [
+      "a desk moved beside the only window",
+      "rent paid from a small strange system",
+      "a room that stops asking for proof",
+      "the first no said without apology",
+      "a train ticket bought before dawn",
+      "someone else saying the quiet part"
+    ],
+    "previousDraft": "By November, the desk had moved beside the only window. The work was still small enough to fit in two browser tabs and one notebook, but people had started forwarding it without explanation. Rent came from a small strange system that paid on Tuesdays. Nobody called it brave.",
+    "steeringNote": "Make the future feel more costly and concrete.",
+    "expectedTraits": {
+      "minWords": 320,
+      "maxWords": 750,
+      "minMotifHits": 4,
+      "requiredMotifTerms": ["desk", "window", "rent", "system", "room", "proof", "train", "quiet"],
+      "forbiddenTerms": [
+        "Big Five",
+        "openness",
+        "conscientiousness",
+        "extraversion",
+        "agreeableness",
+        "neuroticism",
+        "risk tolerance",
+        "novelty appetite",
+        "questionnaire",
+        "personality test"
+      ],
+      "genericPhrases": [
+        "unlock your potential",
+        "embrace the journey",
+        "follow your dreams",
+        "step into your power",
+        "become the best version of yourself"
+      ]
+    }
+  },
+  {
+    "id": "midcareer-relocation",
+    "description": "Mid-career operator trading stable status for a smaller, truer market.",
+    "lang": "en",
+    "guidance": 6,
+    "signatureAuthor": "Jhumpa Lahiri",
+    "fields": {
+      "age": "30-44",
+      "mobility": "A move is possible if the work finally feels real",
+      "currentMode": "Competent but underused operator",
+      "trajectoryFocus": "Turning private judgment into public consequence",
+      "hiddenEdge": "A reputation for fixing what others cannot name",
+      "recurringTrap": "Keeping peace until the room forgets I have a price",
+      "costWillingness": "Leaving the title that made the family relax",
+      "magneticScene": "A narrow storefront with the lights on before sunrise",
+      "socialMirror": "That the practical years were an apprenticeship",
+      "obsessions": "Systems people can trust without understanding",
+      "delayFailureMode": "Explaining myself to people already invested in my staying",
+      "inflection": "A client asks for the work under my own name",
+      "location": "A move is possible if the work finally feels real",
+      "skills": "",
+      "resources": "A reputation for fixing what others cannot name",
+      "constraints": "Keeping peace until the room forgets I have a price",
+      "workStyle": "A narrow storefront with the lights on before sunrise",
+      "riskTolerance": "Leaving the title that made the family relax",
+      "timeHorizon": "That the practical years were an apprenticeship"
+    },
+    "big5": [6, 8, 5, 6, 5],
+    "curationAnswers": {
+      "whyThese": "They sound like the life after permission runs out.",
+      "rejectedFuture": "Another promotion that makes the days cleaner and less mine."
+    },
+    "selectedFragments": [
+      "keys returned in a paper envelope",
+      "the old title gone from the email signature",
+      "a storefront light before sunrise",
+      "a ledger balanced by hand",
+      "family dinner with the good news withheld",
+      "the client who stops asking for discounts"
+    ],
+    "previousDraft": "The keys went back in a paper envelope because nobody could find the original tag. For two weeks the old title stayed in cached search results, but it had vanished from the email signature. A storefront light came on before sunrise, and the ledger was still balanced by hand.",
+    "steeringNote": "Keep the victory muted; make the cost social, not theatrical.",
+    "expectedTraits": {
+      "minWords": 320,
+      "maxWords": 750,
+      "minMotifHits": 4,
+      "requiredMotifTerms": ["keys", "envelope", "title", "signature", "storefront", "ledger", "family", "client"],
+      "forbiddenTerms": [
+        "Big Five",
+        "openness",
+        "conscientiousness",
+        "extraversion",
+        "agreeableness",
+        "neuroticism",
+        "risk tolerance",
+        "questionnaire",
+        "career assessment",
+        "personality"
+      ],
+      "genericPhrases": [
+        "unlock your potential",
+        "embrace the journey",
+        "follow your dreams",
+        "step into your power",
+        "best version of yourself"
+      ]
+    }
+  },
+  {
+    "id": "quiet-craft",
+    "description": "Late-blooming craft path where the future is made through reputation, restraint, and a changed room.",
+    "lang": "en",
+    "guidance": 8,
+    "signatureAuthor": "Sally Rooney",
+    "fields": {
+      "age": "45-59",
+      "mobility": "Likely to stay, but change the terms of the place",
+      "currentMode": "Experienced maker hiding in useful work",
+      "trajectoryFocus": "Letting the private standard become visible",
+      "hiddenEdge": "A network of people who trust my taste more than I do",
+      "recurringTrap": "Saying yes because the request sounds reasonable",
+      "costWillingness": "Being misunderstood by people who liked the old availability",
+      "magneticScene": "A table where the right people become quieter",
+      "socialMirror": "That refusing was the generous act",
+      "obsessions": "Work that changes the temperature of a room",
+      "delayFailureMode": "Mistaking usefulness for devotion",
+      "inflection": "A failed project makes the standard obvious",
+      "location": "Likely to stay, but change the terms of the place",
+      "skills": "",
+      "resources": "A network of people who trust my taste more than I do",
+      "constraints": "Saying yes because the request sounds reasonable",
+      "workStyle": "A table where the right people become quieter",
+      "riskTolerance": "Being misunderstood by people who liked the old availability",
+      "timeHorizon": "That refusing was the generous act"
+    },
+    "big5": [8, 8, 4, 7, 6],
+    "curationAnswers": {
+      "whyThese": "They feel like dignity without announcement.",
+      "rejectedFuture": "Being indispensable in rooms I no longer respect."
+    },
+    "selectedFragments": [
+      "the calendar with whole afternoons crossed out",
+      "a failed commission left on the table",
+      "two chairs removed from the meeting room",
+      "the first invoice nobody questions",
+      "a quiet room after the refusal",
+      "someone younger copying the standard"
+    ],
+    "previousDraft": "The calendar began to show whole afternoons crossed out in pen. A failed commission sat on the table for three days, making everyone speak more carefully. When two chairs disappeared from the meeting room, nobody asked where they had gone.",
+    "steeringNote": "Make the change intimate and practical, with one awkward social consequence.",
+    "expectedTraits": {
+      "minWords": 320,
+      "maxWords": 750,
+      "minMotifHits": 4,
+      "requiredMotifTerms": ["calendar", "afternoons", "commission", "chairs", "invoice", "refusal", "room", "younger"],
+      "forbiddenTerms": [
+        "Big Five",
+        "openness",
+        "conscientiousness",
+        "extraversion",
+        "agreeableness",
+        "neuroticism",
+        "personality",
+        "questionnaire",
+        "self-help"
+      ],
+      "genericPhrases": [
+        "unlock your potential",
+        "embrace the journey",
+        "follow your dreams",
+        "step into your power",
+        "best version of yourself"
+      ]
+    }
+  }
+]

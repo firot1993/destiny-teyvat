@@ -1,0 +1,155 @@
+description: Destiny prompt contract evals
+
+prompts:
+  - "{{scenario}}"
+
+providers:
+  - id: file://evals/promptfoo/destinyPromptProvider.ts
+    label: destiny-prompt-builder
+
+commandLineOptions:
+  maxConcurrency: 1
+  share: false
+  table: true
+
+tests:
+  - description: scan prompt preserves raw-fragment contract
+    vars:
+      scenario: scan
+      lang: en
+      guidance: 7
+      required: |
+        Generate exactly 10 raw future fragments.
+        WORLD STATE:
+        Format exactly:
+        Respond with only the 10 fragments.
+      forbidden: |
+        Big Five
+        openness
+        conscientiousness
+    assert:
+      - type: javascript
+        value: file://evals/promptfoo/assertPromptContract.cjs
+
+  - description: structure prompt keeps fragments as motifs
+    vars:
+      scenario: structure
+      lang: en
+      required: |
+        SELECTED FRAGMENTS
+        Write 5-6 sentences of continuous prose
+        Rules:
+        Do not name personality dimensions or psychological labels.
+      forbidden: |
+        PERSON'S CURRENT STATE:
+        Personality (Big Five)
+    assert:
+      - type: javascript
+        value: file://evals/promptfoo/assertPromptContract.cjs
+
+  - description: critique prompt asks for concrete revision notes
+    vars:
+      scenario: critique
+      lang: en
+      required: |
+        You are a sharp-eyed story editor.
+        Output 3-5 short, concrete revision notes.
+        No general praise
+        Respond with only the notes.
+      forbidden: |
+        SCORE:
+    assert:
+      - type: javascript
+        value: file://evals/promptfoo/assertPromptContract.cjs
+
+  - description: sharpen prompt honors critique and steering
+    vars:
+      scenario: sharpen
+      lang: en
+      required: |
+        CRITIQUE NOTES (address these in the revision):
+        USER DIRECTION (honor this instruction in the revision):
+        Rewrite and expand the draft into 2-3 paragraphs
+        Also honor the user direction above.
+      forbidden: |
+        exactly 4 paragraphs
+    assert:
+      - type: javascript
+        value: file://evals/promptfoo/assertPromptContract.cjs
+
+  - description: final prompt uses six chamber anchors
+    vars:
+      scenario: final
+      lang: en
+      signatureAuthor: Rachel Cusk
+      required: |
+        MOTIFS (in the order they should anchor the story):
+        Paragraph 1 anchor:
+        Paragraph 4 anchor:
+        Write in the voice of Rachel Cusk.
+        exactly 4 paragraphs
+      forbidden: |
+        USER DIRECTION
+    assert:
+      - type: javascript
+        value: file://evals/promptfoo/assertPromptContract.cjs
+
+  - description: cleanup prompt blocks questionnaire leakage
+    vars:
+      scenario: cleanup
+      lang: en
+      required: |
+        Read this trajectory and rewrite any sentence
+        Names a personality dimension
+        Could appear on a motivational poster or LinkedIn bio
+        Also honor the user direction above.
+      forbidden: |
+        SCORE:
+    assert:
+      - type: javascript
+        value: file://evals/promptfoo/assertPromptContract.cjs
+
+  - description: quality gate prompt emits one score line
+    vars:
+      scenario: qualityGate
+      lang: en
+      required: |
+        Score the draft on a scale from 1-10
+        Questionnaire invisibility
+        Output ONLY a single line in this exact format:
+        SCORE: <number 1-10>
+      forbidden: |
+        REVISION_OK
+    assert:
+      - type: javascript
+        value: file://evals/promptfoo/assertPromptContract.cjs
+
+  - description: revision verifier prompt has closed response formats
+    vars:
+      scenario: revisionVerification
+      lang: en
+      required: |
+        You are a revision verifier.
+        ORIGINAL CRITIQUE NOTES:
+        REVISION_OK
+        UNRESOLVED:
+      forbidden: |
+        DIVERSE_OK
+    assert:
+      - type: javascript
+        value: file://evals/promptfoo/assertPromptContract.cjs
+
+  - description: diversity prompt checks numbered fragments
+    vars:
+      scenario: diversityCheck
+      lang: en
+      required: |
+        You are checking a set of story fragments for thematic diversity.
+        1:: a desk moved beside the window
+        DIVERSE_OK
+        REPLACE: 3, 7, 9
+      forbidden: |
+        SCORE:
+    assert:
+      - type: javascript
+        value: file://evals/promptfoo/assertPromptContract.cjs

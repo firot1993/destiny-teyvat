@@ -1,0 +1,662 @@
+:root {
+  --surface: #fbf5ea;
+  --paper: #fffdf6;
+  --ink: #1c1917;
+  --moss: rgba(38,84,68,1);
+  --moss-88: rgba(38,84,68,0.88);
+  --moss-78: rgba(38,84,68,0.78);
+  --moss-68: rgba(38,84,68,0.68);
+  --moss-62: rgba(38,84,68,0.62);
+  --moss-bg-06: rgba(38,84,68,0.06);
+  --moss-bg-09: rgba(38,84,68,0.09);
+  --moss-border-16: rgba(38,84,68,0.16);
+  --moss-border-24: rgba(38,84,68,0.24);
+  --moss-border-38: rgba(38,84,68,0.38);
+  --plum: rgba(88,48,74,1);
+  --plum-72: rgba(88,48,74,0.72);
+  --plum-bg-07: rgba(88,48,74,0.07);
+  --plum-border-18: rgba(88,48,74,0.18);
+
+  --ink-88: rgba(0,0,0,0.88);
+  --ink-85: rgba(0,0,0,0.85);
+  --ink-8: rgba(0,0,0,0.8);
+  --ink-75: rgba(0,0,0,0.75);
+  --ink-72: rgba(0,0,0,0.72);
+  --ink-65: rgba(0,0,0,0.65);
+  --ink-6: rgba(0,0,0,0.6);
+  --ink-55: rgba(0,0,0,0.55);
+  --ink-5: rgba(0,0,0,0.5);
+  --ink-48: rgba(0,0,0,0.48);
+  --ink-45: rgba(0,0,0,0.45);
+  --ink-42: rgba(0,0,0,0.42);
+  --ink-38: rgba(0,0,0,0.38);
+  --ink-35: rgba(0,0,0,0.35);
+  --ink-32: rgba(0,0,0,0.32);
+  --ink-3: rgba(0,0,0,0.3);
+  --ink-28: rgba(0,0,0,0.28);
+
+  --ink-bg-04: rgba(0,0,0,0.04);
+  --ink-bg-025: rgba(0,0,0,0.025);
+  --ink-bg-02: rgba(0,0,0,0.02);
+  --ink-bg-03: rgba(0,0,0,0.03);
+  --ink-bg-05: rgba(0,0,0,0.05);
+
+  --ink-border-1: rgba(0,0,0,0.1);
+  --ink-border-09: rgba(0,0,0,0.09);
+  --ink-border-08: rgba(0,0,0,0.08);
+  --ink-border-07: rgba(0,0,0,0.07);
+  --ink-border-06: rgba(0,0,0,0.06);
+  --ink-border-12: rgba(0,0,0,0.12);
+  --ink-border-16: rgba(0,0,0,0.16);
+
+  --amber: rgba(180,110,0,1);
+  --amber-92: rgba(180,110,0,0.92);
+  --amber-9: rgba(180,110,0,0.9);
+  --amber-88: rgba(180,110,0,0.88);
+  --amber-85: rgba(180,110,0,0.85);
+  --amber-82: rgba(180,110,0,0.82);
+  --amber-78: rgba(180,110,0,0.78);
+  --amber-75: rgba(180,110,0,0.75);
+  --amber-72: rgba(180,110,0,0.72);
+  --amber-7: rgba(180,110,0,0.7);
+  --amber-65: rgba(180,110,0,0.65);
+  --amber-62: rgba(180,110,0,0.62);
+  --amber-6: rgba(180,110,0,0.6);
+  --amber-55: rgba(180,110,0,0.55);
+
+  --amber-bg-09: rgba(180,110,0,0.09);
+  --amber-bg-08: rgba(180,110,0,0.08);
+  --amber-bg-07: rgba(180,110,0,0.07);
+  --amber-bg-04: rgba(180,110,0,0.04);
+  --amber-bg-025: rgba(180,110,0,0.025);
+
+  --amber-border-28: rgba(180,110,0,0.28);
+  --amber-border-25: rgba(180,110,0,0.25);
+  --amber-border-24: rgba(180,110,0,0.24);
+  --amber-border-22: rgba(180,110,0,0.22);
+  --amber-border-2: rgba(180,110,0,0.2);
+  --amber-border-16: rgba(180,110,0,0.16);
+  --amber-border-14: rgba(180,110,0,0.14);
+  --amber-border-12: rgba(180,110,0,0.12);
+  --amber-border-35: rgba(180,110,0,0.35);
+
+  --amber-focus: rgba(180,110,0,0.6);
+  --amber-focus-bg: rgba(180,110,0,0.08);
+
+  --red: rgba(200,60,40,1);
+  --red-88: rgba(170,50,30,0.88);
+  --red-85: rgba(180,50,30,0.85);
+  --red-9: rgba(170,50,30,0.9);
+  --red-bg-08: rgba(200,60,40,0.08);
+  --red-bg-06: rgba(200,60,40,0.06);
+  --red-bg-05: rgba(200,50,30,0.05);
+  --red-border-25: rgba(200,60,40,0.25);
+  --red-border-22: rgba(200,60,40,0.22);
+  --red-border-18: rgba(200,60,40,0.18);
+  --red-border-16: rgba(200,60,40,0.16);
+  --red-border-14: rgba(200,50,30,0.14);
+
+  --gold: rgba(200,140,0,1);
+  --gold-1: rgba(200,140,0,0.1);
+
+  --mono: var(--font-jetbrains), monospace;
+  --serif: var(--font-source-serif), Georgia, serif;
+  --serif-zh: var(--font-noto-serif-sc), var(--font-source-serif), Georgia, serif;
+  --display: var(--font-playfair), Georgia, serif;
+  --ui-zh: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&display=swap');
+
+:root {
+  --parchment: #f5ecd9;
+  --parchment-deep: #eadcc0;
+  --ink: #1f1b15;
+  --ink-soft: #4a4439;
+  --ink-faint: #8a8170;
+  --font-display: 'Cormorant Garamond', 'Times New Roman', serif;
+  --font-body: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(216, 105, 75, 0.10), transparent 32%),
+    radial-gradient(circle at top right, rgba(90, 166, 212, 0.10), transparent 30%),
+    linear-gradient(180deg, var(--parchment) 0%, var(--parchment-deep) 100%);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+.display {
+  font-family: var(--font-display);
+  margin: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+a {
+  color: inherit;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.03)),
+    radial-gradient(circle at 20% 20%, rgba(31, 27, 21, 0.02), transparent 30%),
+    radial-gradient(circle at 80% 10%, rgba(31, 27, 21, 0.03), transparent 26%);
+  opacity: 0.75;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1.04); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes signalGlitch {
+  0%, 100% { transform: translateX(0) skewX(0deg); filter: saturate(1); }
+  20% { transform: translateX(-4px) skewX(-5deg); filter: saturate(1.25); }
+  40% { transform: translateX(5px) skewX(6deg); filter: saturate(0.8); }
+  60% { transform: translateX(-3px) skewX(-4deg); filter: saturate(1.2); }
+  80% { transform: translateX(3px) skewX(3deg); filter: saturate(0.9); }
+}
+
+@keyframes signalIntrude {
+  0% { opacity: 0; transform: translateX(42px) scale(0.96); }
+  65% { opacity: 1; transform: translateX(-10px) scale(1.02); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes redStrikeFlash {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* Base interactive transitions */
+button, input[type="text"], textarea {
+  transition:
+    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+input:focus, textarea:focus {
+  border-color: var(--amber-border-28) !important;
+  background: var(--ink-bg-02) !important;
+  box-shadow: 0 0 0 2px var(--amber-focus-bg);
+}
+
+input:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--amber-focus);
+  outline-offset: 2px;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--amber-focus);
+  outline-offset: 2px;
+}
+
+input:focus:not(:focus-visible), textarea:focus:not(:focus-visible) {
+  outline: none;
+}
+
+textarea::placeholder, input::placeholder { color: var(--ink-32); }
+
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--ink-border-12);
+  outline: none;
+  transition: background 0.3s ease;
+}
+
+input[type=range]:hover {
+  background: var(--ink-border-16);
+}
+
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--amber-85);
+  cursor: pointer;
+  border: 2px solid var(--surface);
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
+}
+
+input[type=range]:hover::-webkit-slider-thumb {
+  transform: scale(1.12);
+  box-shadow: 0 0 0 5px rgba(180,110,0,0.12);
+}
+
+input[type=range]:active::-webkit-slider-thumb {
+  transform: scale(0.9);
+  background: var(--ink);
+}
+
+[data-lang="zh"] .destiny-title {
+  font-family: var(--serif-zh);
+}
+
+[data-lang="zh"] .serif:not(.destiny-title),
+[data-lang="zh"] button,
+[data-lang="zh"] .page-tab,
+[data-lang="zh"] .utility-button {
+  font-family: var(--ui-zh) !important;
+}
+
+::selection {
+  background: rgba(180,110,0,0.18);
+  color: var(--ink);
+}
+
+.trajectory-card {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+}
+
+.trajectory-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px var(--ink-border-08);
+  border-color: var(--amber-border-2) !important;
+}
+
+.step-reveal {
+  animation: slideInRight 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+.page-shell {
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+.page-frame {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: clamp(32px, 7vw, 72px) 24px 88px;
+  position: relative;
+}
+
+.page-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 28px;
+  align-items: start;
+  margin-bottom: clamp(36px, 7vw, 58px);
+  padding-top: 18px;
+  border-top: 1px solid var(--moss-border-24);
+}
+
+.header-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.utility-button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: rgba(255,253,246,0.88);
+  border: 1px solid var(--ink-border-12);
+  border-radius: 8px;
+  padding: 7px 11px;
+  color: var(--ink-75);
+  cursor: pointer;
+  font: 600 12px/1 var(--mono);
+}
+
+.utility-button[data-active="true"] {
+  color: var(--moss);
+  border-color: var(--moss-border-38);
+  background: rgba(236,245,239,0.92);
+}
+
+.icon-only {
+  width: 38px;
+  padding: 0;
+}
+
+.page-kicker {
+  width: fit-content;
+  margin-bottom: 18px;
+  color: var(--moss);
+  font: 700 13px/1.1 var(--mono);
+  letter-spacing: 0.12em;
+}
+
+.destiny-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(46px, 9vw, 76px);
+  font-weight: 900;
+  line-height: 0.96;
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.destiny-title span {
+  display: block;
+}
+
+.destiny-title .title-offset {
+  color: #a46300;
+  font-style: italic;
+  transform: translateX(clamp(20px, 7vw, 56px));
+}
+
+.title-rule {
+  width: min(210px, 54vw);
+  height: 7px;
+  margin-top: 18px;
+  background:
+    linear-gradient(90deg, var(--moss) 0 28%, transparent 28% 34%, var(--amber-72) 34% 100%);
+  opacity: 0.92;
+}
+
+.settings-panel {
+  margin-bottom: 28px;
+  padding: 20px 22px;
+  background: rgba(255,253,246,0.92);
+  border: 1px solid var(--moss-border-24);
+  border-radius: 8px;
+  box-shadow: 0 18px 40px rgba(54,40,24,0.06);
+  animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.page-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 38px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--moss-border-24);
+}
+
+.page-tab {
+  position: relative;
+  min-height: 56px;
+  padding: 13px 14px;
+  text-align: left;
+  background: rgba(255,253,246,0.72);
+  border: 1px solid rgba(28,25,23,0.07);
+  border-radius: 8px;
+  color: var(--ink-65);
+  cursor: pointer;
+  font: 700 13px/1.25 var(--mono);
+  letter-spacing: 0.02em;
+}
+
+.page-tab::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 8px;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.18;
+}
+
+.page-tab[data-active="true"] {
+  color: var(--moss);
+  border-color: var(--moss-border-38);
+  background: var(--paper);
+  box-shadow:
+    inset 0 -4px 0 #b77408,
+    0 8px 20px rgba(82,60,24,0.09);
+}
+
+.icon-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.soft-panel {
+  background: rgba(255,250,240,0.5);
+  border: 1px solid var(--ink-border-08);
+  border-radius: 8px;
+}
+
+@media (max-width: 680px) {
+  body::before {
+    display: none;
+  }
+
+  .page-frame {
+    padding: 26px 16px 64px;
+  }
+
+  .page-header {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .header-actions {
+    justify-content: flex-start;
+    order: -1;
+  }
+
+  .destiny-title {
+    font-size: clamp(42px, 14vw, 58px);
+  }
+
+  .destiny-title .title-offset {
+    transform: translateX(16px);
+  }
+
+  .page-tabs {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .page-tab {
+    min-height: 48px;
+  }
+}
+
+/* ---- Bullet field — Curate phase ----
+   Kinetic-typography stage. CSS owns bullet flight, bob, bullet-time,
+   and lock-on styling so that `:has()`-gated hover can pause everything
+   at once (no restart on resume). BulletField.tsx owns the data layer
+   and catch-burst overlay. */
+.bullet-field {
+  cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><g fill='none' stroke='rgba(0,0,0,0.72)' stroke-width='1.4' stroke-linecap='round'><line x1='12' y1='2' x2='12' y2='9'/><line x1='12' y1='15' x2='12' y2='22'/><line x1='2' y1='12' x2='9' y2='12'/><line x1='15' y1='12' x2='22' y2='12'/><circle cx='12' cy='12' r='1.2' fill='rgba(0,0,0,0.72)' stroke='none'/></g></svg>") 12 12, crosshair;
+}
+
+@keyframes bulletFlyLtr {
+  0%   { translate: -120vw 0; opacity: 0; }
+  8%   { opacity: var(--bullet-opacity, 1); }
+  88%  { opacity: var(--bullet-opacity, 1); }
+  100% { translate: 120vw 0; opacity: 0; }
+}
+@keyframes bulletFlyRtl {
+  0%   { translate: 120vw 0; opacity: 0; }
+  8%   { opacity: var(--bullet-opacity, 1); }
+  88%  { opacity: var(--bullet-opacity, 1); }
+  100% { translate: -120vw 0; opacity: 0; }
+}
+@keyframes bulletBob {
+  0%, 100% { margin-top: 0; }
+  50%      { margin-top: calc(var(--bullet-bob-px, 10px) * -1); }
+}
+
+.bullet-wrap {
+  position: absolute;
+  left: 0;
+  transform-origin: center;
+  transition:
+    scale 140ms cubic-bezier(0.22, 1, 0.3, 1),
+    filter 140ms ease,
+    z-index 0s linear 140ms;
+}
+
+/* When any wrapper is hovered, the field enters bullet-time.
+   Flight + bob speed scaling is handled in JS via the Web Animations API
+   (Animation.playbackRate) so progress is preserved — CSS
+   animation-play-state can only toggle paused/running, not slow-mo. */
+
+.bullet-field:has(.bullet-wrap:hover) .bullet-wrap:not(:hover) {
+  filter: blur(var(--bullet-dim-blur, 1.2px))
+          brightness(var(--bullet-dim-brightness, 0.48));
+}
+
+.bullet-field:has(.bullet-wrap:hover) .bullet-wrap:hover {
+  scale: var(--bullet-focus-scale, 1.18);
+  filter: brightness(var(--bullet-focus-brightness, 1.12));
+  z-index: 3;
+}
+
+/* Lock-on ring — appears around the hovered bullet.
+   Outside the parallelogram-clipped text element so clipPath doesn't cut it. */
+.lock-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  pointer-events: none;
+  opacity: 0;
+  scale: 0.55;
+  translate: -50% -50%;
+  transition:
+    opacity 120ms ease,
+    scale 220ms cubic-bezier(0.22, 1, 0.3, 1);
+}
+.bullet-wrap:hover .lock-ring {
+  opacity: 1;
+  scale: 1;
+}
+
+/* Catch burst — transient flash + shards. No cursor interactivity. */
+.catch-burst {
+  position: absolute;
+  pointer-events: none;
+  translate: -50% -50%;
+  z-index: 4;
+}
+
+/* "Stop the world" — when any bullet is hovered, dim everything except
+   the bullet stage. A fixed overlay inside page-shell's stacking context
+   so we can lift the stage above it without touching body stacking. */
+.bullet-stage {
+  position: relative;
+}
+.page-shell::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 14, 0.34);
+  pointer-events: none;
+  z-index: 20;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+.page-shell:has(.bullet-wrap:hover)::after {
+  opacity: 1;
+}
+.page-shell:has(.bullet-wrap:hover) .bullet-stage {
+  z-index: 21;
+}
+
+/* Opt bullets out of the global button hover/active nudge —
+   the bullet-time scale + catch burst own the press payoff. */
+button.bullet,
+button.bullet:hover:not(:disabled),
+button.bullet:active:not(:disabled) {
+  transform: none;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+button.bullet:focus-visible {
+  outline: 2px solid var(--amber-focus);
+  outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.next/
+*.tsbuildinfo
+.DS_Store
+.vscode/settings.json
+.env
+.env.local
+.wrangler/
+.promptfoo/
+
+.dev.vars*
+!.dev.vars.example
+!.env.example
+.worktrees/

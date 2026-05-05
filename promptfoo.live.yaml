@@ -1,0 +1,49 @@
+description: Destiny live final-story quality comparison
+
+prompts:
+  - "{{scenarioId}}"
+
+providers:
+  - id: file://evals/promptfoo/liveFinalStoryProvider.ts
+    label: openrouter-claude-sonnet
+    config:
+      provider: openrouter
+      model: anthropic/claude-sonnet-4.6
+      runCleanup: true
+
+  - id: file://evals/promptfoo/liveFinalStoryProvider.ts
+    label: deepseek-chat
+    config:
+      provider: deepseek
+      model: deepseek-chat
+      runCleanup: true
+
+  - id: file://evals/promptfoo/liveFinalStoryProvider.ts
+    label: xai-grok-fast-reasoning
+    config:
+      provider: xai
+      model: grok-4-1-fast-reasoning
+      runCleanup: true
+
+commandLineOptions:
+  maxConcurrency: 1
+  share: false
+  table: true
+
+defaultTest:
+  assert:
+    - type: javascript
+      value: file://evals/promptfoo/assertFinalStoryQuality.cjs
+
+tests:
+  - description: independent builder final story quality
+    vars:
+      scenarioId: independent-builder
+
+  - description: midcareer relocation final story quality
+    vars:
+      scenarioId: midcareer-relocation
+
+  - description: quiet craft final story quality
+    vars:
+      scenarioId: quiet-craft

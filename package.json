@@ -1,0 +1,45 @@
+{
+  "name": "destiny",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "NODE_USE_ENV_PROXY=1 HTTP_PROXY=${HTTP_PROXY:-$http_proxy} HTTPS_PROXY=${HTTPS_PROXY:-$https_proxy} ALL_PROXY=${ALL_PROXY:-$all_proxy} next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "redteam:run": "NODE_USE_ENV_PROXY=1 NODE_USE_SYSTEM_CA=1 PROMPTFOO_CONFIG_DIR=.promptfoo PROMPTFOO_DISABLE_TELEMETRY=1 PROMPTFOO_DISABLE_UPDATE=1 PROMPTFOO_DISABLE_SHARING=1 promptfoo redteam run -c promptfoo.redteam.yaml -o .promptfoo/redteam.generated.yaml --env-file .env.local",
+    "redteam:generate": "NODE_USE_ENV_PROXY=1 NODE_USE_SYSTEM_CA=1 PROMPTFOO_CONFIG_DIR=.promptfoo PROMPTFOO_DISABLE_TELEMETRY=1 PROMPTFOO_DISABLE_UPDATE=1 PROMPTFOO_DISABLE_SHARING=1 promptfoo redteam generate -c promptfoo.redteam.yaml -o .promptfoo/redteam.generated.yaml --env-file .env.local",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:push": "supabase db push"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "@upstash/ratelimit": "^2.0.5",
+    "@upstash/redis": "^1.34.0",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.8.0",
+    "next": "^15.3.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@vitest/ui": "^4.1.4",
+    "eslint": "^8",
+    "eslint-config-next": "^15.3.1",
+    "jsdom": "^29.0.2",
+    "promptfoo": "^0.121.7",
+    "supabase": "^1.200.0",
+    "typescript": "^5",
+    "vitest": "^4.1.4"
+  }
+}

@@ -1,0 +1,35 @@
+# Supabase local development config.
+# Run `npx supabase start` to boot a dockerized Postgres + Studio matching this config.
+# Docs: https://supabase.com/docs/guides/local-development
+
+project_id = "destiny"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost:54321"
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = false
+
+[auth]
+enabled = false
+
+[analytics]
+enabled = false

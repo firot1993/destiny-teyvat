@@ -103,7 +103,7 @@ interface I18nContextValue {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Language>("en");
+  const [lang, setLang] = useState<Language>("zh");
 
   useEffect(() => {
     const saved = new URLSearchParams(window.location.search).get("lang");
@@ -111,12 +111,12 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       setLang(saved as Language);
       return;
     }
-    const browserLang = navigator.language || "en";
-    setLang(browserLang.startsWith("zh") ? "zh" : "en");
+    const browserLang = navigator.language || "zh";
+    setLang(browserLang.startsWith("en") ? "en" : "zh");
   }, []);
 
   const t = useCallback(
-    (key: string) => translations[lang]?.[key] ?? translations["en"]?.[key] ?? key,
+    (key: string) => translations[lang]?.[key] ?? translations["zh"]?.[key] ?? key,
     [lang]
   );
 

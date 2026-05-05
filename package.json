@@ -9,6 +9,8 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "eval:prompts": "PROMPTFOO_CONFIG_DIR=.promptfoo PROMPTFOO_DISABLE_TELEMETRY=1 PROMPTFOO_DISABLE_UPDATE=1 PROMPTFOO_DISABLE_REMOTE_GENERATION=true PROMPTFOO_DISABLE_SHARING=1 promptfoo eval",
+    "eval:live": "NODE_USE_ENV_PROXY=1 NODE_USE_SYSTEM_CA=1 PROMPTFOO_CONFIG_DIR=.promptfoo PROMPTFOO_DISABLE_TELEMETRY=1 PROMPTFOO_DISABLE_UPDATE=1 PROMPTFOO_DISABLE_SHARING=1 promptfoo eval -c promptfoo.live.yaml --no-cache --env-file .env.local",
     "redteam:run": "NODE_USE_ENV_PROXY=1 NODE_USE_SYSTEM_CA=1 PROMPTFOO_CONFIG_DIR=.promptfoo PROMPTFOO_DISABLE_TELEMETRY=1 PROMPTFOO_DISABLE_UPDATE=1 PROMPTFOO_DISABLE_SHARING=1 promptfoo redteam run -c promptfoo.redteam.yaml -o .promptfoo/redteam.generated.yaml --env-file .env.local",
     "redteam:generate": "NODE_USE_ENV_PROXY=1 NODE_USE_SYSTEM_CA=1 PROMPTFOO_CONFIG_DIR=.promptfoo PROMPTFOO_DISABLE_TELEMETRY=1 PROMPTFOO_DISABLE_UPDATE=1 PROMPTFOO_DISABLE_SHARING=1 promptfoo redteam generate -c promptfoo.redteam.yaml -o .promptfoo/redteam.generated.yaml --env-file .env.local",
     "db:start": "supabase start",

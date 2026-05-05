@@ -1,11 +1,11 @@
-description: Destiny prompt contract evals
+description: Teyvat prompt contract evals
 
 prompts:
   - "{{scenario}}"
 
 providers:
-  - id: file://evals/promptfoo/destinyPromptProvider.ts
-    label: destiny-prompt-builder
+  - id: file://evals/promptfoo/teyvatPromptProvider.ts
+    label: teyvat-prompt-builder
 
 commandLineOptions:
   maxConcurrency: 1
@@ -13,143 +13,106 @@ commandLineOptions:
   table: true
 
 tests:
-  - description: scan prompt preserves raw-fragment contract
+  - description: reveal prompt contains character schema and constraints
     vars:
-      scenario: scan
-      lang: en
-      guidance: 7
+      scenario: reveal
+      lang: zh
+      framing: protagonist
       required: |
-        Generate exactly 10 raw future fragments.
-        WORLD STATE:
-        Format exactly:
-        Respond with only the 10 fragments.
+        character reveal
+        Teyvat
+        Genshin Impact
+        vision
+        nation
+        weapon
+        archetype
+        bio
+        visionStory
+        constellation
+        signature
+        knownAssociate
+        Return JSON only
       forbidden: |
         Big Five
+        personality test
+        questionnaire
         openness
         conscientiousness
     assert:
       - type: javascript
         value: file://evals/promptfoo/assertPromptContract.cjs
 
-  - description: structure prompt keeps fragments as motifs
+  - description: reveal prompt includes mapping hints
     vars:
-      scenario: structure
-      lang: en
+      scenario: reveal
+      lang: zh
+      framing: companion
       required: |
-        SELECTED FRAGMENTS
-        Write 5-6 sentences of continuous prose
-        Rules:
-        Do not name personality dimensions or psychological labels.
+        Soft mapping hints
+        Framing: companion
+        canonical Genshin character
       forbidden: |
-        PERSON'S CURRENT STATE:
-        Personality (Big Five)
+        personality
+        Big Five
     assert:
       - type: javascript
         value: file://evals/promptfoo/assertPromptContract.cjs
 
-  - description: critique prompt asks for concrete revision notes
+  - description: scene prompt contains tagged structure and pacing
     vars:
-      scenario: critique
-      lang: en
+      scenario: scene
+      lang: zh
+      sceneNumber: 2
+      previousChoice: follow the voice
       required: |
-        You are a sharp-eyed story editor.
-        Output 3-5 short, concrete revision notes.
-        No general praise
-        Respond with only the notes.
+        scene 2
+        interactive Teyvat adventure
+        Genshin Impact
+        <scene>
+        </scene>
+        <choices>
+        </choices>
+        <closing>
+        </closing>
+        <summary>
+        </summary>
+        Pacing for this scene
+        Story so far
       forbidden: |
-        SCORE:
+        personality
+        Big Five
+        questionnaire
     assert:
       - type: javascript
         value: file://evals/promptfoo/assertPromptContract.cjs
 
-  - description: sharpen prompt honors critique and steering
+  - description: scene prompt includes character detail
     vars:
-      scenario: sharpen
-      lang: en
+      scenario: scene
+      lang: zh
+      sceneNumber: 3
       required: |
-        CRITIQUE NOTES (address these in the revision):
-        USER DIRECTION (honor this instruction in the revision):
-        Rewrite and expand the draft into 2-3 paragraphs
-        Also honor the user direction above.
+        Name: Yuna
+        Vision: Cryo
+        Nation: Inazuma
+        Weapon: polearm
+        Archetype: Wandering Cartographer
       forbidden: |
-        exactly 4 paragraphs
+        personality test
     assert:
       - type: javascript
         value: file://evals/promptfoo/assertPromptContract.cjs
 
-  - description: final prompt uses six chamber anchors
+  - description: late scene prompt enforces closing pressure
     vars:
-      scenario: final
-      lang: en
-      signatureAuthor: Rachel Cusk
+      scenario: scene
+      lang: zh
+      sceneNumber: 7
       required: |
-        MOTIFS (in the order they should anchor the story):
-        Paragraph 1 anchor:
-        Paragraph 4 anchor:
-        Write in the voice of Rachel Cusk.
-        exactly 4 paragraphs
+        closing must be true
+        Land the plane
       forbidden: |
-        USER DIRECTION
-    assert:
-      - type: javascript
-        value: file://evals/promptfoo/assertPromptContract.cjs
-
-  - description: cleanup prompt blocks questionnaire leakage
-    vars:
-      scenario: cleanup
-      lang: en
-      required: |
-        Read this trajectory and rewrite any sentence
-        Names a personality dimension
-        Could appear on a motivational poster or LinkedIn bio
-        Also honor the user direction above.
-      forbidden: |
-        SCORE:
-    assert:
-      - type: javascript
-        value: file://evals/promptfoo/assertPromptContract.cjs
-
-  - description: quality gate prompt emits one score line
-    vars:
-      scenario: qualityGate
-      lang: en
-      required: |
-        Score the draft on a scale from 1-10
-        Questionnaire invisibility
-        Output ONLY a single line in this exact format:
-        SCORE: <number 1-10>
-      forbidden: |
-        REVISION_OK
-    assert:
-      - type: javascript
-        value: file://evals/promptfoo/assertPromptContract.cjs
-
-  - description: revision verifier prompt has closed response formats
-    vars:
-      scenario: revisionVerification
-      lang: en
-      required: |
-        You are a revision verifier.
-        ORIGINAL CRITIQUE NOTES:
-        REVISION_OK
-        UNRESOLVED:
-      forbidden: |
-        DIVERSE_OK
-    assert:
-      - type: javascript
-        value: file://evals/promptfoo/assertPromptContract.cjs
-
-  - description: diversity prompt checks numbered fragments
-    vars:
-      scenario: diversityCheck
-      lang: en
-      required: |
-        You are checking a set of story fragments for thematic diversity.
-        1:: a desk moved beside the window
-        DIVERSE_OK
-        REPLACE: 3, 7, 9
-      forbidden: |
-        SCORE:
+        closing must be false
     assert:
       - type: javascript
         value: file://evals/promptfoo/assertPromptContract.cjs

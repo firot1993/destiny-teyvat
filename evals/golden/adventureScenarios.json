@@ -1,0 +1,74 @@
+[
+  {
+    "id": "storm-wanderer",
+    "description": "Storm-attuned wanderer with Electro affinity and exile energy.",
+    "lang": "zh",
+    "answers": {
+      "wakeNotice": "distant voices speaking a language you almost know",
+      "weather": "a storm that hasn't broken yet",
+      "trade": "to disappear cleanly and start over",
+      "power": "precision — doing one thing perfectly",
+      "promise": "a letter you never sent",
+      "fork": "the one no one's taken",
+      "break": "a blade drawn slowly"
+    },
+    "framing": "protagonist",
+    "expectedTraits": {
+      "minWords": 50,
+      "maxWords": 500,
+      "forbiddenTerms": [
+        "Big Five", "openness", "conscientiousness", "extraversion",
+        "agreeableness", "neuroticism", "personality test", "questionnaire"
+      ],
+      "requiredFields": ["name", "vision", "nation", "weapon", "archetype", "bio", "visionStory", "constellation", "signature"]
+    }
+  },
+  {
+    "id": "mist-guardian",
+    "description": "Mist-born guardian with protective instinct, companion framing.",
+    "lang": "zh",
+    "answers": {
+      "wakeNotice": "the silence that isn't empty",
+      "weather": "mist that hides whatever is ahead",
+      "trade": "to keep one person safe, no matter what",
+      "power": "protection — standing between harm and someone you love",
+      "promise": "a door you left open",
+      "fork": "the harder climb",
+      "break": "laughter you didn't expect"
+    },
+    "framing": "companion",
+    "expectedTraits": {
+      "minWords": 50,
+      "maxWords": 500,
+      "forbiddenTerms": [
+        "Big Five", "openness", "conscientiousness", "extraversion",
+        "agreeableness", "neuroticism", "personality test", "questionnaire"
+      ],
+      "requiredFields": ["name", "vision", "nation", "weapon", "archetype", "bio", "visionStory", "constellation", "signature", "knownAssociate"]
+    }
+  },
+  {
+    "id": "silence-scholar",
+    "description": "Contemplative scholar from a cold, quiet background.",
+    "lang": "zh",
+    "answers": {
+      "wakeNotice": "something glowing at the edge of your vision",
+      "weather": "thin cold air after a snowfall",
+      "trade": "to know something no one else remembers",
+      "power": "precision — doing one thing perfectly",
+      "promise": "a name you stopped using",
+      "fork": "the harder climb",
+      "break": "a blade drawn slowly"
+    },
+    "framing": "protagonist",
+    "expectedTraits": {
+      "minWords": 50,
+      "maxWords": 500,
+      "forbiddenTerms": [
+        "Big Five", "openness", "conscientiousness", "extraversion",
+        "agreeableness", "neuroticism", "personality test", "questionnaire"
+      ],
+      "requiredFields": ["name", "vision", "nation", "weapon", "archetype", "bio", "visionStory", "constellation", "signature"]
+    }
+  }
+]

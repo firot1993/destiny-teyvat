@@ -1,29 +1,32 @@
-description: Destiny live final-story quality comparison
+description: Teyvat live adventure quality comparison
 
 prompts:
   - "{{scenarioId}}"
 
 providers:
-  - id: file://evals/promptfoo/liveFinalStoryProvider.ts
+  - id: file://evals/promptfoo/apiGenerateTarget.ts
     label: openrouter-claude-sonnet
     config:
       provider: openrouter
       model: anthropic/claude-sonnet-4.6
-      runCleanup: true
+      maxTokens: 1500
+      temperature: 0.9
 
-  - id: file://evals/promptfoo/liveFinalStoryProvider.ts
-    label: deepseek-chat
+  - id: file://evals/promptfoo/apiGenerateTarget.ts
+    label: deepseek-v4-flash
     config:
       provider: deepseek
-      model: deepseek-chat
-      runCleanup: true
+      model: deepseek-v4-flash
+      maxTokens: 1500
+      temperature: 0.9
 
-  - id: file://evals/promptfoo/liveFinalStoryProvider.ts
+  - id: file://evals/promptfoo/apiGenerateTarget.ts
     label: xai-grok-fast-reasoning
     config:
       provider: xai
       model: grok-4-1-fast-reasoning
-      runCleanup: true
+      maxTokens: 1500
+      temperature: 0.9
 
 commandLineOptions:
   maxConcurrency: 1
@@ -33,17 +36,17 @@ commandLineOptions:
 defaultTest:
   assert:
     - type: javascript
-      value: file://evals/promptfoo/assertFinalStoryQuality.cjs
+      value: file://evals/promptfoo/assertAdventureQuality.cjs
 
 tests:
-  - description: independent builder final story quality
+  - description: storm-wanderer reveal quality
     vars:
-      scenarioId: independent-builder
+      scenarioId: storm-wanderer
 
-  - description: midcareer relocation final story quality
+  - description: mist-guardian reveal quality
     vars:
-      scenarioId: midcareer-relocation
+      scenarioId: mist-guardian
 
-  - description: quiet craft final story quality
+  - description: silence-scholar reveal quality
     vars:
-      scenarioId: quiet-craft
+      scenarioId: silence-scholar

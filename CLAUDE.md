@@ -43,11 +43,20 @@ Skip docs for trivial edits and typo-only changes. Prefer updating an existing f
 
 ### Prompting
 
-- Prompt construction lives in `lib/teyvat/prompts.ts`.
+- Prompt construction lives in `lib/teyvat/prompts.ts` (public dispatch + parsers) and `lib/teyvat/promptVariants.ts` (variant registry and per-variant builders).
 - `buildRevealPrompt(...)` + `parseReveal(...)` handle the character reveal card.
 - `buildScenePrompt(...)` + `parseSceneStream(...)` handle scene generation and streaming-tag parsing.
-- The reveal prompt contains the editable soft mapping table from questionnaire answers to in-world signals.
-- The reveal prompt also enforces nation-specific naming conventions, bans element words in the `name` field, and rejects names that collide with the canonical Genshin roster via `lib/teyvat/canonNames.ts`. The reveal schema includes a `title` epithet field rendered with `「」` brackets in Chinese and em-dashes in English.
+- Both `buildRevealPrompt` and `buildScenePrompt` accept an optional trailing `variantId` and dispatch through `PROMPT_VARIANTS`. Omitting it is equivalent to `DEFAULT_PROMPT_VARIANT_ID` (`"v1"`), so existing callers and tests keep working.
+- The default `v1` variant is the editorial baseline and includes the soft mapping table; `v2-tight` is a concise alternate (drops the mapping table, hardens constraints) and acts as the second arm of the A/B split.
+- The reveal prompt enforces nation-specific naming conventions, bans element words in the `name` field, and rejects names that collide with the canonical Genshin roster via `lib/teyvat/canonNames.ts`. The reveal schema includes a `title` epithet field rendered with `「」` brackets in Chinese and em-dashes in English.
+
+### Prompt Switch System
+
+- Variant resolution lives in `lib/teyvat/promptSwitch.ts`.
+- Precedence is URL `?promptVariant=<id>` (debug override, not persisted) → `localStorage["destiny-prompt-variant"]` (sticky A/B assignment) → weighted-random pick across `PROMPT_VARIANTS.weight` (persisted on first roll so the user stays on the same arm).
+- `useAdventure.ts` calls `resolvePromptVariant()` once on mount and passes the resolved id into both prompt builders.
+- The settings panel in `app/page.tsx` exposes a "Prompt variant" picker for in-app debugging; selecting a variant calls `setPromptVariant(...)` which writes to localStorage so the change is sticky.
+- To add a new variant: implement `buildReveal` / `buildScene` in `promptVariants.ts`, append it to `PROMPT_VARIANTS` with a `weight`, and the resolver, picker, and tests pick it up automatically.
 
 ### Providers And Quotas
 
@@ -79,7 +88,9 @@ Skip docs for trivial edits and typo-only changes. Prefer updating an existing f
 - [components/teyvat/AdventureLog.tsx](components/teyvat/AdventureLog.tsx) — expandable prior-scene log
 - [components/teyvat/Ending.tsx](components/teyvat/Ending.tsx) — ending screen with replay/new-run actions
 - [lib/teyvat/questionnaire.ts](lib/teyvat/questionnaire.ts) — questionnaire schema and chapter metadata
-- [lib/teyvat/prompts.ts](lib/teyvat/prompts.ts) — reveal/scene prompt builders and parsers
+- [lib/teyvat/prompts.ts](lib/teyvat/prompts.ts) — public reveal/scene prompt builders and parsers; dispatches by variant id
+- [lib/teyvat/promptVariants.ts](lib/teyvat/promptVariants.ts) — prompt variant registry (v1 baseline, v2-tight alternate)
+- [lib/teyvat/promptSwitch.ts](lib/teyvat/promptSwitch.ts) — variant resolver: URL → localStorage → weighted-random sticky pick
 - [lib/teyvat/character.ts](lib/teyvat/character.ts) — revealed character types and validation
 - [lib/teyvat/scenes.ts](lib/teyvat/scenes.ts) — scene/adventure types
 - [lib/teyvat/storage.ts](lib/teyvat/storage.ts) — local adventure persistence

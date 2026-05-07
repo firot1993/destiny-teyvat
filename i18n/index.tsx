@@ -51,6 +51,12 @@ const translations: Record<string, Record<string, string>> = {
     show_less: "Show less",
     view_adventure: "View adventure",
     open_bookshelf: "Bookshelf",
+    choose_your_destiny: "Choose Your Destiny",
+    candidate_pick_hint: "One of these is the life waiting for you. Pick the one that pulls hardest.",
+    filter_all: "All",
+    filter_editorial: "Editorial",
+    filter_wish: "Wish-fulfillment",
+    filter_other: "Other",
   },
 
   zh: {
@@ -93,6 +99,12 @@ const translations: Record<string, Record<string, string>> = {
     show_less: "收起",
     view_adventure: "查看冒险",
     open_bookshelf: "书架",
+    choose_your_destiny: "择命",
+    candidate_pick_hint: "其中之一，是已经在等你的命途。选那一束最强的牵引。",
+    filter_all: "全部",
+    filter_editorial: "正传",
+    filter_wish: "爽文",
+    filter_other: "其他",
   },
 };
 

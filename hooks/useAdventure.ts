@@ -12,13 +12,20 @@ import {
 } from "@/lib/constants";
 import { clearAdventure, loadAdventure, saveAdventure, archiveToLibrary, loadLibrary } from "@/lib/teyvat/storage";
 import {
+  buildCandidatesPrompt,
   buildRevealPrompt,
   buildScenePrompt,
+  parseCandidates,
   parseReveal,
   parseSceneStream,
+  prefilterRoster,
+  CANON_ROSTER,
+  getCanonCharacter,
+  type CanonCharacter,
 } from "@/lib/teyvat/prompts";
 import {
   DEFAULT_PROMPT_VARIANT_ID,
+  getPromptVariant,
   listPromptVariants,
   type PromptVariantMeta,
 } from "@/lib/teyvat/promptVariants";
@@ -27,7 +34,7 @@ import {
   setPromptVariant as persistPromptVariant,
 } from "@/lib/teyvat/promptSwitch";
 import type { Framing, RevealedCharacter } from "@/lib/teyvat/character";
-import type { TeyvatAnswers } from "@/lib/teyvat/questionnaire";
+import type { QuestionnaireSchema, TeyvatAnswers } from "@/lib/teyvat/questionnaire";
 import type { AdventureState, Scene } from "@/lib/teyvat/scenes";
 
 export type AdventurePhase =
@@ -35,10 +42,18 @@ export type AdventurePhase =
   | "bookshelf"
   | "questionnaire"
   | "revealing"
+  | "candidates-generating"
+  | "candidate-pick"
   | "reveal-shown"
   | "scene-generating"
   | "scene-shown"
   | "ended";
+
+export interface CandidateOption {
+  character: CanonCharacter;
+  hook: string;
+  imageUrl: string | null;
+}
 
 export interface UseAdventureResult {
   phase: AdventurePhase;
@@ -54,12 +69,15 @@ export interface UseAdventureResult {
   model: string;
   promptVariant: string;
   availablePromptVariants: PromptVariantMeta[];
+  questionnaireSchema: QuestionnaireSchema;
+  candidates: CandidateOption[] | null;
   hasSavedAdventure: boolean;
   begin(): void;
   openBookshelf(): void;
   closeBookshelf(): void;
   loadFromLibrary(id: string): boolean;
   submitQuestionnaire(answers: TeyvatAnswers, language: Language): Promise<void>;
+  pickCandidate(id: string, language: Language): Promise<void>;
   enterWorld(language: Language): Promise<void>;
   chooseChoice(choice: string, language: Language): Promise<void>;
   stopHere(): void;
@@ -143,7 +161,9 @@ export function useAdventure(): UseAdventureResult {
   const [hasSavedAdventure, setHasSavedAdventure] = useState(false);
   const [characterImageUrl, setCharacterImageUrl] = useState<string | null>(null);
   const [promptVariant, setPromptVariantState] = useState<string>(DEFAULT_PROMPT_VARIANT_ID);
+  const [candidates, setCandidates] = useState<CandidateOption[] | null>(null);
   const availablePromptVariants = listPromptVariants();
+  const questionnaireSchema = getPromptVariant(promptVariant).capabilities.questionnaire;
 
   const refreshLibrary = useCallback(() => {
     setLibrary(loadLibrary());
@@ -395,11 +415,85 @@ export function useAdventure(): UseAdventureResult {
     setPhase("questionnaire");
   }, []);
 
+  const generateCandidatePortrait = useCallback(
+    async (option: CandidateOption) => {
+      try {
+        const c = option.character;
+        const portraitPrompt = `Genshin Impact official character portrait of ${c.nameEn}, anime illustration style, ${c.vision} vision wielder from ${c.nation}, using a ${c.weapon}, upper body, dramatic lighting. No text, no words, no letters, no watermarks, no signatures, no captions in the image.`;
+        const response = await fetch("/api/imagine", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt: portraitPrompt }),
+        });
+        if (!response.ok) {
+          return;
+        }
+        const data = (await response.json()) as { url?: string };
+        if (data.url) {
+          setCandidates((current) => {
+            if (!current) return current;
+            return current.map((existing) =>
+              existing.character.id === c.id ? { ...existing, imageUrl: data.url ?? null } : existing
+            );
+          });
+        }
+      } catch {
+        // best-effort; never blocks
+      }
+    },
+    []
+  );
+
   const submitQuestionnaire = useCallback(
     async (answers: TeyvatAnswers, language: Language) => {
-      setPhase("revealing");
       setError(null);
       setStreamingText("");
+
+      const variant = getPromptVariant(promptVariant);
+
+      if (variant.capabilities.reveal.kind === "candidates") {
+        setPhase("candidates-generating");
+        try {
+          const prefiltered = prefilterRoster(CANON_ROSTER, answers);
+          const allowedIds = new Set(prefiltered.map((c) => c.id));
+          const prompt = buildCandidatesPrompt(answers, prefiltered, language);
+          const firstRaw = await callJsonModel([{ role: "user", content: prompt }], REVEAL_MAX_TOKENS);
+          let parsed = parseCandidates(firstRaw, allowedIds);
+
+          if (!parsed.ok) {
+            const errorList = parsed.errors.map((e) => `- ${e}`).join("\n");
+            const retryPrompt = `${prompt}\n\nYour previous answer had these problems:\n${errorList}\n\nReturn valid JSON only, matching the schema exactly, with all problems above fixed.`;
+            const retryRaw = await callJsonModel([{ role: "user", content: retryPrompt }], REVEAL_MAX_TOKENS);
+            parsed = parseCandidates(retryRaw, allowedIds);
+          }
+
+          if (!parsed.ok) {
+            throw new Error(parsed.errors.join(" | "));
+          }
+
+          const options: CandidateOption[] = parsed.candidates.map((entry) => {
+            const character = getCanonCharacter(entry.id);
+            return {
+              character: character!,
+              hook: entry.hook,
+              imageUrl: null,
+            };
+          });
+          setCandidates(options);
+          setPhase("candidate-pick");
+
+          for (const option of options) {
+            void generateCandidatePortrait(option);
+          }
+          return;
+        } catch (requestError) {
+          setError(requestError instanceof Error ? requestError.message : "Candidate suggestion failed.");
+          setPhase("questionnaire");
+          return;
+        }
+      }
+
+      setPhase("revealing");
 
       const framing = rollFraming();
       const prompt = buildRevealPrompt(answers, framing, language, promptVariant);
@@ -426,6 +520,7 @@ export function useAdventure(): UseAdventureResult {
           ended: false,
           endedBy: null,
           startedAt: new Date().toISOString(),
+          variantId: promptVariant,
         };
 
         setCharacter(parsed.character);
@@ -434,14 +529,71 @@ export function useAdventure(): UseAdventureResult {
         setHasSavedAdventure(true);
         setPhase("reveal-shown");
 
-        // Fire-and-forget image generation — never blocks the reveal flow.
         void generateCharacterImage(parsed.character);
       } catch (requestError) {
         setError(requestError instanceof Error ? requestError.message : "Reveal failed.");
         setPhase("questionnaire");
       }
     },
-    [callJsonModel, generateCharacterImage, promptVariant]
+    [callJsonModel, generateCharacterImage, generateCandidatePortrait, promptVariant]
+  );
+
+  const pickCandidate = useCallback(
+    async (id: string, language: Language) => {
+      if (!candidates) {
+        return;
+      }
+      const option = candidates.find((o) => o.character.id === id);
+      if (!option) {
+        return;
+      }
+
+      const c = option.character;
+      const archetype = c.archetypeBlurb[language] ?? c.archetypeBlurb.en;
+      const bio = c.bioBlurb[language] ?? c.bioBlurb.en;
+      const displayName = language === "zh" ? c.nameZh : c.nameEn;
+
+      const character: RevealedCharacter = {
+        framing: "protagonist",
+        name: displayName,
+        title: c.nameEn,
+        vision: c.vision,
+        nation: c.nation,
+        weapon: c.weapon,
+        archetype,
+        bio,
+        visionStory: option.hook,
+        constellation: "—",
+        signature: "—",
+        knownAssociate: "",
+        awakeningHook: option.hook,
+      };
+
+      const nextAdventure: AdventureState = {
+        id: generateId(),
+        character,
+        scenes: [],
+        ended: false,
+        endedBy: null,
+        startedAt: new Date().toISOString(),
+        variantId: promptVariant,
+      };
+
+      setCharacter(character);
+      setCharacterImageUrl(option.imageUrl);
+      setAdventure(nextAdventure);
+      saveAdventure(nextAdventure);
+      setHasSavedAdventure(true);
+      setCandidates(null);
+
+      try {
+        await generateScene(nextAdventure, "", language);
+      } catch (requestError) {
+        setError(requestError instanceof Error ? requestError.message : "Scene generation failed.");
+        setPhase("questionnaire");
+      }
+    },
+    [candidates, generateScene, promptVariant]
   );
 
   const enterWorld = useCallback(
@@ -518,6 +670,7 @@ export function useAdventure(): UseAdventureResult {
     setCharacter(null);
     setCharacterImageUrl(null);
     setAdventure(null);
+    setCandidates(null);
     setStreamingText("");
     setError(null);
     setPhase("idle");
@@ -614,12 +767,15 @@ export function useAdventure(): UseAdventureResult {
     model,
     promptVariant,
     availablePromptVariants,
+    questionnaireSchema,
+    candidates,
     hasSavedAdventure,
     begin,
     openBookshelf,
     closeBookshelf,
     loadFromLibrary,
     submitQuestionnaire,
+    pickCandidate,
     enterWorld,
     chooseChoice,
     stopHere,

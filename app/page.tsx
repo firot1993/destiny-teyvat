@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AdventureLog } from "@/components/teyvat/AdventureLog";
 import { Bookshelf } from "@/components/teyvat/Bookshelf";
+import { CandidateGallery } from "@/components/teyvat/CandidateGallery";
 import { Ending } from "@/components/teyvat/Ending";
 import { Questionnaire } from "@/components/teyvat/Questionnaire";
 import { RevealCard } from "@/components/teyvat/RevealCard";
@@ -35,12 +36,15 @@ export default function Page() {
     model,
     promptVariant,
     availablePromptVariants,
+    questionnaireSchema,
+    candidates,
     hasSavedAdventure,
     begin,
     openBookshelf,
     closeBookshelf,
     loadFromLibrary,
     submitQuestionnaire,
+    pickCandidate,
     enterWorld,
     chooseChoice,
     stopHere,
@@ -55,7 +59,12 @@ export default function Page() {
   const theme = character ? themeForVision(character.vision) : null;
   const scene = adventure?.scenes[adventure.scenes.length - 1] ?? null;
   const showSettings =
-    phase === "idle" || phase === "bookshelf" || phase === "revealing" || phase === "reveal-shown";
+    phase === "idle" ||
+    phase === "bookshelf" ||
+    phase === "revealing" ||
+    phase === "reveal-shown" ||
+    phase === "candidates-generating" ||
+    phase === "candidate-pick";
   const showQuota = dailyRemaining !== null && dailyRemaining < 3;
 
   return (
@@ -143,14 +152,24 @@ export default function Page() {
       ) : null}
 
       {phase === "questionnaire" ? (
-        <Questionnaire onComplete={(answers) => void submitQuestionnaire(answers, lang)} />
+        <Questionnaire
+          schema={questionnaireSchema}
+          onComplete={(answers) => void submitQuestionnaire(answers, lang)}
+        />
       ) : null}
 
-      {phase === "revealing" ? (
+      {phase === "revealing" || phase === "candidates-generating" ? (
         <div style={loadingWrap}>
           <div style={loadingGlyph}>✦</div>
           <p style={loadingText}>{t("listening_for_name")}</p>
         </div>
+      ) : null}
+
+      {phase === "candidate-pick" && candidates ? (
+        <CandidateGallery
+          candidates={candidates}
+          onPick={(id) => void pickCandidate(id, lang)}
+        />
       ) : null}
 
       {phase === "reveal-shown" && character ? (

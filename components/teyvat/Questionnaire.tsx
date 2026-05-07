@@ -2,11 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useI18n } from "@/i18n";
-import {
-  CHAPTER_META,
-  TEYVAT_STEPS,
-  type TeyvatAnswers,
-} from "@/lib/teyvat/questionnaire";
+import type { QuestionnaireSchema, TeyvatAnswers } from "@/lib/teyvat/questionnaire";
 import {
   BORDER_FAINT,
   BORDER_SOFT,
@@ -18,6 +14,7 @@ import {
 } from "@/lib/teyvat/theme";
 
 interface Props {
+  schema: QuestionnaireSchema;
   onComplete: (answers: TeyvatAnswers) => void;
 }
 
@@ -25,31 +22,31 @@ type ScreenState =
   | { kind: "intro"; stepIndex: number }
   | { kind: "question"; stepIndex: number };
 
-function nextScreen(stepIndex: number): ScreenState | null {
-  if (stepIndex >= TEYVAT_STEPS.length - 1) {
+function nextScreen(schema: QuestionnaireSchema, stepIndex: number): ScreenState | null {
+  if (stepIndex >= schema.steps.length - 1) {
     return null;
   }
 
   const nextIndex = stepIndex + 1;
-  const nextStep = TEYVAT_STEPS[nextIndex];
-  const currentStep = TEYVAT_STEPS[stepIndex];
+  const nextStep = schema.steps[nextIndex];
+  const currentStep = schema.steps[stepIndex];
   if (nextStep.chapter !== currentStep.chapter) {
     return { kind: "intro", stepIndex: nextIndex };
   }
   return { kind: "question", stepIndex: nextIndex };
 }
 
-export function Questionnaire({ onComplete }: Props) {
+export function Questionnaire({ schema, onComplete }: Props) {
   const { t, lang } = useI18n();
   const [answers, setAnswers] = useState<TeyvatAnswers>({});
   const [screen, setScreen] = useState<ScreenState>({ kind: "intro", stepIndex: 0 });
 
-  const step = TEYVAT_STEPS[screen.stepIndex];
-  const chapter = CHAPTER_META[step.chapter];
+  const step = schema.steps[screen.stepIndex];
+  const chapter = schema.chapterMeta[step.chapter];
   const selected = answers[step.id] ?? "";
   const progressCount = useMemo(
-    () => TEYVAT_STEPS.findIndex((item) => item.id === step.id) + 1,
-    [step.id]
+    () => schema.steps.findIndex((item) => item.id === step.id) + 1,
+    [schema, step.id]
   );
 
   if (screen.kind === "intro") {
@@ -74,7 +71,7 @@ export function Questionnaire({ onComplete }: Props) {
   return (
     <div style={wrap}>
       <div style={progress}>
-        {TEYVAT_STEPS.map((item, index) => (
+        {schema.steps.map((item, index) => (
           <span
             key={item.id}
             style={{
@@ -128,7 +125,7 @@ export function Questionnaire({ onComplete }: Props) {
         }}
         disabled={!selected}
         onClick={() => {
-          const next = nextScreen(screen.stepIndex);
+          const next = nextScreen(schema, screen.stepIndex);
           if (!next) {
             onComplete(answers);
             return;
@@ -136,7 +133,7 @@ export function Questionnaire({ onComplete }: Props) {
           setScreen(next);
         }}
       >
-        {screen.stepIndex === TEYVAT_STEPS.length - 1 ? t("begin") : t("next")}
+        {screen.stepIndex === schema.steps.length - 1 ? t("begin") : t("next")}
       </button>
     </div>
   );

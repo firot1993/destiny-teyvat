@@ -16,6 +16,7 @@ export interface AdventureState {
   ended: boolean;
   endedBy: "model" | "user" | null;
   startedAt: string;
+  variantId?: string;
 }
 
 export function nextSceneNumber(state: AdventureState): number {

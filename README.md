@@ -17,6 +17,7 @@ Destiny is now a Teyvat adventure generator built with Next.js. A short seven-qu
 - Reveal generation is one non-streaming JSON call built by `buildRevealPrompt(...)` and parsed by `parseReveal(...)`.
 - Scene generation is one streamed-or-fallback call per scene built by `buildScenePrompt(...)` and parsed by `parseSceneStream(...)`.
 - The scene prompt includes a pacing matrix that pushes toward closure by scene 5-7, with a hard cap at scene 10.
+- A prompt switch system (`lib/teyvat/promptVariants.ts` + `lib/teyvat/promptSwitch.ts`) drives both A/B testing and frontend debugging: each call dispatches through a named variant (`v1` editorial baseline, `v2-tight` concise alternate), picked by `?promptVariant=<id>` → `localStorage` → weighted-random sticky assignment.
 - Provider retries, fallback providers, daily quota headers, per-IP throttling, and optional telemetry remain in the shared runtime.
 
 ## Architecture
@@ -101,7 +102,9 @@ npm run db:stop
 - `app/api/telemetry/route.ts` — optional best-effort session/story telemetry
 - `hooks/useAdventure.ts` — reveal + scene runtime state machine
 - `lib/teyvat/questionnaire.ts` — seven-question staged questionnaire schema
-- `lib/teyvat/prompts.ts` — reveal/scene prompt builders and parsers
+- `lib/teyvat/prompts.ts` — public reveal/scene builders and parsers (dispatches by variant id)
+- `lib/teyvat/promptVariants.ts` — prompt variant registry (`v1` baseline, `v2-tight` alternate)
+- `lib/teyvat/promptSwitch.ts` — variant resolver and debug picker hooks (URL / localStorage / weighted-random)
 - `lib/teyvat/character.ts` — reveal types and validation
 - `lib/teyvat/scenes.ts` — scene/adventure types
 - `lib/teyvat/storage.ts` — localStorage persistence for in-progress adventures

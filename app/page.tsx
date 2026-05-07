@@ -33,6 +33,8 @@ export default function Page() {
     dailyRemaining,
     provider,
     model,
+    promptVariant,
+    availablePromptVariants,
     hasSavedAdventure,
     begin,
     openBookshelf,
@@ -46,6 +48,7 @@ export default function Page() {
     resumeAdventure,
     setProvider,
     setModel,
+    setPromptVariant,
   } = useAdventure();
   const [logOpen, setLogOpen] = useState(false);
 
@@ -90,6 +93,22 @@ export default function Page() {
                 {(PROVIDERS[provider] ?? PROVIDERS[DEFAULT_PROVIDER]).map((modelName) => (
                   <option key={modelName} value={modelName}>
                     {modelName}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label style={settingsField}>
+              <span>{t("prompt_variant_label")}</span>
+              <select
+                value={promptVariant}
+                onChange={(event) => setPromptVariant(event.target.value)}
+                title={
+                  availablePromptVariants.find((v) => v.id === promptVariant)?.description
+                }
+              >
+                {availablePromptVariants.map((variant) => (
+                  <option key={variant.id} value={variant.id} title={variant.description}>
+                    {variant.label}
                   </option>
                 ))}
               </select>

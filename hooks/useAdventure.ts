@@ -17,6 +17,15 @@ import {
   parseReveal,
   parseSceneStream,
 } from "@/lib/teyvat/prompts";
+import {
+  DEFAULT_PROMPT_VARIANT_ID,
+  listPromptVariants,
+  type PromptVariantMeta,
+} from "@/lib/teyvat/promptVariants";
+import {
+  resolvePromptVariant,
+  setPromptVariant as persistPromptVariant,
+} from "@/lib/teyvat/promptSwitch";
 import type { Framing, RevealedCharacter } from "@/lib/teyvat/character";
 import type { TeyvatAnswers } from "@/lib/teyvat/questionnaire";
 import type { AdventureState, Scene } from "@/lib/teyvat/scenes";
@@ -43,6 +52,8 @@ export interface UseAdventureResult {
   dailyLimit: number | null;
   provider: string;
   model: string;
+  promptVariant: string;
+  availablePromptVariants: PromptVariantMeta[];
   hasSavedAdventure: boolean;
   begin(): void;
   openBookshelf(): void;
@@ -56,6 +67,7 @@ export interface UseAdventureResult {
   resumeAdventure(): boolean;
   setProvider(provider: string): void;
   setModel(model: string): void;
+  setPromptVariant(id: string): void;
 }
 
 function defaultModel(provider: string): string {
@@ -130,6 +142,8 @@ export function useAdventure(): UseAdventureResult {
   const [model, setModelState] = useState(() => defaultModel(DEFAULT_PROVIDER));
   const [hasSavedAdventure, setHasSavedAdventure] = useState(false);
   const [characterImageUrl, setCharacterImageUrl] = useState<string | null>(null);
+  const [promptVariant, setPromptVariantState] = useState<string>(DEFAULT_PROMPT_VARIANT_ID);
+  const availablePromptVariants = listPromptVariants();
 
   const refreshLibrary = useCallback(() => {
     setLibrary(loadLibrary());
@@ -138,6 +152,7 @@ export function useAdventure(): UseAdventureResult {
   useEffect(() => {
     setHasSavedAdventure(Boolean(loadAdventure()));
     refreshLibrary();
+    setPromptVariantState(resolvePromptVariant());
   }, [refreshLibrary]);
 
   const updateQuotaHeaders = useCallback((response: Response) => {
@@ -331,7 +346,13 @@ export function useAdventure(): UseAdventureResult {
       setStreamingText("");
 
       const sceneNumber = currentAdventure.scenes.length + 1;
-      const prompt = buildScenePrompt(currentAdventure, sceneNumber, previousChoice, language);
+      const prompt = buildScenePrompt(
+        currentAdventure,
+        sceneNumber,
+        previousChoice,
+        language,
+        promptVariant
+      );
       const raw = await streamScene([{ role: "user", content: prompt }], SCENE_MAX_TOKENS);
       const parsed = parseSceneStream(raw);
 
@@ -365,7 +386,7 @@ export function useAdventure(): UseAdventureResult {
       }
       setPhase(nextAdventure.ended ? "ended" : "scene-shown");
     },
-    [streamScene, refreshLibrary]
+    [streamScene, refreshLibrary, promptVariant]
   );
 
   const begin = useCallback(() => {
@@ -381,7 +402,7 @@ export function useAdventure(): UseAdventureResult {
       setStreamingText("");
 
       const framing = rollFraming();
-      const prompt = buildRevealPrompt(answers, framing, language);
+      const prompt = buildRevealPrompt(answers, framing, language, promptVariant);
 
       try {
         const firstRaw = await callJsonModel([{ role: "user", content: prompt }], REVEAL_MAX_TOKENS);
@@ -420,7 +441,7 @@ export function useAdventure(): UseAdventureResult {
         setPhase("questionnaire");
       }
     },
-    [callJsonModel, generateCharacterImage]
+    [callJsonModel, generateCharacterImage, promptVariant]
   );
 
   const enterWorld = useCallback(
@@ -574,6 +595,11 @@ export function useAdventure(): UseAdventureResult {
     setModelState(nextModel);
   }, []);
 
+  const setPromptVariant = useCallback((nextVariant: string) => {
+    persistPromptVariant(nextVariant);
+    setPromptVariantState(nextVariant);
+  }, []);
+
   return {
     phase,
     character,
@@ -586,6 +612,8 @@ export function useAdventure(): UseAdventureResult {
     dailyLimit,
     provider,
     model,
+    promptVariant,
+    availablePromptVariants,
     hasSavedAdventure,
     begin,
     openBookshelf,
@@ -599,5 +627,6 @@ export function useAdventure(): UseAdventureResult {
     resumeAdventure,
     setProvider,
     setModel,
+    setPromptVariant,
   };
 }

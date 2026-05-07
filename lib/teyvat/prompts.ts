@@ -19,6 +19,15 @@ export {
   type PromptVariantMeta,
 } from "@/lib/teyvat/promptVariants";
 
+export {
+  buildCandidatesPrompt,
+  parseCandidates,
+  prefilterRoster,
+  type CandidatesParseResult,
+} from "@/lib/teyvat/candidates";
+
+export { CANON_ROSTER, getCanonCharacter, type CanonCharacter } from "@/lib/teyvat/canonRoster";
+
 export function buildRevealPrompt(
   answers: TeyvatAnswers,
   framing: Framing,

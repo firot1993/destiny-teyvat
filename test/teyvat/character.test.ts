@@ -66,4 +66,21 @@ describe("validateRevealedCharacter", () => {
     const result = validateRevealedCharacter(withoutTitle);
     expect(result.ok).toBe(false);
   });
+
+  it("accepts missing awakeningHook", () => {
+    expect(validateRevealedCharacter(VALID).ok).toBe(true);
+  });
+
+  it("accepts string awakeningHook", () => {
+    const result = validateRevealedCharacter({ ...VALID, awakeningHook: "you wake at the top of Tenshukaku..." });
+    expect(result.ok).toBe(true);
+  });
+
+  it("rejects non-string awakeningHook", () => {
+    const result = validateRevealedCharacter({ ...VALID, awakeningHook: 42 });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors).toContain("awakeningHook must be a string when provided");
+    }
+  });
 });

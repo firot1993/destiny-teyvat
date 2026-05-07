@@ -22,6 +22,7 @@ export interface RevealedCharacter {
   constellation: string;
   signature: string;
   knownAssociate: string;
+  awakeningHook?: string;
 }
 
 export type ValidationResult = { ok: true } | { ok: false; errors: string[] };
@@ -68,6 +69,10 @@ export function validateRevealedCharacter(value: unknown): ValidationResult {
     errors.push("knownAssociate must be a string");
   } else if (candidate.framing === "companion" && candidate.knownAssociate.trim() === "") {
     errors.push("knownAssociate is required when framing is 'companion'");
+  }
+
+  if (candidate.awakeningHook !== undefined && typeof candidate.awakeningHook !== "string") {
+    errors.push("awakeningHook must be a string when provided");
   }
 
   return errors.length === 0 ? { ok: true } : { ok: false, errors };

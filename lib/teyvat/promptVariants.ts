@@ -570,3 +570,12 @@ export function isKnownPromptVariant(id: string | null | undefined): boolean {
   }
   return PROMPT_VARIANTS.some((variant) => variant.id === id);
 }
+
+export type VariantFamily = "editorial" | "wish-fulfillment" | "other";
+
+export function variantFamily(id: string | undefined | null): VariantFamily {
+  if (!id) return "editorial";
+  if (id === "v1" || id === "v2-tight") return "editorial";
+  if (id === "v2-wish") return "wish-fulfillment";
+  return "other";
+}

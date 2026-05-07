@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useI18n } from "@/i18n";
 import type { AdventureState } from "@/lib/teyvat/scenes";
 import type { RevealedCharacter } from "@/lib/teyvat/character";
+import { variantFamily } from "@/lib/teyvat/promptVariants";
 import {
   BORDER_SOFT,
   BORDER_FAINT,
@@ -16,6 +17,22 @@ import {
 } from "@/lib/teyvat/theme";
 
 type Tab = "stories" | "characters";
+type Filter = "all" | "editorial" | "wish-fulfillment" | "other";
+
+const FILTER_OPTIONS: Filter[] = ["all", "editorial", "wish-fulfillment", "other"];
+
+function filterLabel(f: Filter): string {
+  switch (f) {
+    case "all":
+      return "filter_all";
+    case "editorial":
+      return "filter_editorial";
+    case "wish-fulfillment":
+      return "filter_wish";
+    case "other":
+      return "filter_other";
+  }
+}
 
 interface Props {
   library: AdventureState[];
@@ -49,7 +66,17 @@ function formatDate(iso: string): string {
 export function Bookshelf({ library, onResume, onClose }: Props) {
   const { t } = useI18n();
   const [tab, setTab] = useState<Tab>("stories");
+  const [filter, setFilter] = useState<Filter>("all");
+
+  const filteredLibrary =
+    filter === "all"
+      ? library
+      : library.filter((entry) => variantFamily(entry.variantId) === filter);
   const characters = uniqueCharacters(library);
+  const filteredCharacters =
+    filter === "all"
+      ? characters
+      : characters.filter(({ from }) => variantFamily(from.variantId) === filter);
 
   return (
     <div style={overlay}>
@@ -67,30 +94,43 @@ export function Bookshelf({ library, onResume, onClose }: Props) {
             style={tab === "stories" ? tabActive : tabInactive}
             onClick={() => setTab("stories")}
           >
-            {t("stories_tab")} ({library.length})
+            {t("stories_tab")} ({filteredLibrary.length})
           </button>
           <button
             type="button"
             style={tab === "characters" ? tabActive : tabInactive}
             onClick={() => setTab("characters")}
           >
-            {t("characters_tab")} ({characters.length})
+            {t("characters_tab")} ({filteredCharacters.length})
           </button>
+        </div>
+
+        <div style={filterRow}>
+          {FILTER_OPTIONS.map((f) => (
+            <button
+              key={f}
+              type="button"
+              style={filter === f ? chipActive : chipInactive}
+              onClick={() => setFilter(f)}
+            >
+              {t(filterLabel(f))}
+            </button>
+          ))}
         </div>
 
         <div style={scrollArea}>
           {tab === "stories" ? (
-            library.length === 0 ? (
+            filteredLibrary.length === 0 ? (
               <p style={emptyText}>{t("no_stories_yet")}</p>
             ) : (
-              library.map((entry) => (
+              filteredLibrary.map((entry) => (
                 <StoryCard key={entry.id} entry={entry} onResume={onResume} />
               ))
             )
-          ) : characters.length === 0 ? (
+          ) : filteredCharacters.length === 0 ? (
             <p style={emptyText}>{t("no_characters_yet")}</p>
           ) : (
-            characters.map(({ character, adventureCount, from }) => (
+            filteredCharacters.map(({ character, adventureCount, from }) => (
               <CharacterCard
                 key={`${character.name}-${from.id}`}
                 character={character}
@@ -284,6 +324,35 @@ const tabInactive: React.CSSProperties = {
   ...tabBase,
   color: INK_FAINT,
   borderBottom: "2px solid transparent",
+};
+
+const filterRow: React.CSSProperties = {
+  display: "flex",
+  gap: 8,
+  padding: "12px 24px 0",
+  flexWrap: "wrap",
+};
+
+const chipBase: React.CSSProperties = {
+  fontSize: 11,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  padding: "5px 10px",
+  border: `1px solid ${BORDER_FAINT}`,
+  background: "transparent",
+  cursor: "pointer",
+};
+
+const chipActive: React.CSSProperties = {
+  ...chipBase,
+  background: INK,
+  color: PARCHMENT,
+  borderColor: INK,
+};
+
+const chipInactive: React.CSSProperties = {
+  ...chipBase,
+  color: INK_SOFT,
 };
 
 const scrollArea: React.CSSProperties = {

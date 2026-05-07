@@ -63,11 +63,13 @@ describe("PROMPT_VARIANTS registry", () => {
     expect(v2).toBeDefined();
   });
 
-  it("every variant has a label, description, and positive weight", () => {
+  it("every variant has a label, description, and a non-negative weight", () => {
+    // Weight 0 means "registered but not in the random A/B pool" (opt-in only,
+    // e.g. v2-wish). Random arms of the A/B should still have weight > 0.
     for (const variant of PROMPT_VARIANTS) {
       expect(variant.label).toBeTruthy();
       expect(variant.description).toBeTruthy();
-      expect(variant.weight).toBeGreaterThan(0);
+      expect(variant.weight).toBeGreaterThanOrEqual(0);
     }
   });
 

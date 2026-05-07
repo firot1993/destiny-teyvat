@@ -63,7 +63,10 @@ describe("resolvePromptVariant", () => {
   it("rolls a weighted assignment and persists it when nothing is stored", () => {
     expect(localStorage.getItem(PROMPT_VARIANT_STORAGE_KEY)).toBeNull();
     const id = resolvePromptVariant({ rng: () => 0.99 });
-    expect(id).toBe(PROMPT_VARIANTS[PROMPT_VARIANTS.length - 1].id);
+    // The last variant in the random pool (weight > 0). v2-wish has weight 0
+    // so it's not in the pool; rng=0.99 must land on the last weighted variant.
+    const weightedPool = PROMPT_VARIANTS.filter((v) => v.weight > 0);
+    expect(id).toBe(weightedPool[weightedPool.length - 1].id);
     expect(localStorage.getItem(PROMPT_VARIANT_STORAGE_KEY)).toBe(id);
   });
 
@@ -81,12 +84,14 @@ describe("resolvePromptVariant", () => {
   });
 
   it("rolls all known variants with the right boundaries (uniform weights)", () => {
-    // With two variants of weight 1 each, rng=0 hits the first, rng=0.99 hits the second.
+    // Weighted random ranges over variants with weight > 0. rng=0 hits the
+    // first weighted variant, rng=0.99 hits the last weighted variant.
+    const weightedPool = PROMPT_VARIANTS.filter((v) => v.weight > 0);
     localStorage.clear();
-    expect(resolvePromptVariant({ rng: () => 0, ephemeral: true })).toBe(PROMPT_VARIANTS[0].id);
+    expect(resolvePromptVariant({ rng: () => 0, ephemeral: true })).toBe(weightedPool[0].id);
     localStorage.clear();
     expect(resolvePromptVariant({ rng: () => 0.99, ephemeral: true })).toBe(
-      PROMPT_VARIANTS[PROMPT_VARIANTS.length - 1].id
+      weightedPool[weightedPool.length - 1].id
     );
   });
 });

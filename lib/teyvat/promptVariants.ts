@@ -7,6 +7,7 @@ import {
   type TeyvatAnswers,
 } from "@/lib/teyvat/questionnaire";
 import { editorialQuestionnaire } from "@/lib/teyvat/questionnaires/editorialQuestionnaire";
+import { wishQuestionnaire } from "@/lib/teyvat/questionnaires/wishQuestionnaire";
 
 const LANG_NAMES: Record<Language, string> = {
   en: "English",
@@ -382,6 +383,89 @@ Output (use these tags in this order):
 }
 
 /* ------------------------------------------------------------------
+ * Variant: v2-wish (wish-fulfillment / 爽文)
+ *
+ * Casts canonical Genshin characters via the candidates pipeline;
+ * the reveal builder here is unused (the candidate-pick step
+ * handles selection). The scene builder leans into transmigration
+ * framing and 爽文 escalation, anchoring scene 1 on the chosen
+ * awakening hook.
+ * ------------------------------------------------------------------ */
+
+function buildRevealWish(
+  _answers: TeyvatAnswers,
+  _framing: Framing,
+  _language: Language
+): string {
+  // Unused — v2-wish goes through buildCandidatesPrompt + pickCandidate instead.
+  return "";
+}
+
+function buildSceneWish(
+  state: AdventureState,
+  sceneNumber: number,
+  previousChoice: string,
+  language: Language
+): string {
+  const c = state.character;
+  const outputLanguage = languageName(language);
+  const storySoFar =
+    state.scenes.length === 0
+      ? "(scene 1 — the awakening)"
+      : state.scenes
+          .map(
+            (scene) =>
+              `${scene.sceneNumber}. ${scene.summary}${scene.fromChoice ? ` (chose: ${scene.fromChoice})` : ""}`
+          )
+          .join("\n");
+  const fromChoiceLine = previousChoice
+    ? `Last choice: ${previousChoice}`
+    : "Opening scene — the awakening.";
+  const pacing = pacingFor(sceneNumber);
+  const isOpening = state.scenes.length === 0;
+  const awakeningBlock =
+    isOpening && c.awakeningHook
+      ? `\nAwakening hook (anchor scene 1 on this — expand it, do not repeat it verbatim):\n${c.awakeningHook}\n`
+      : "";
+
+  return `Scene ${sceneNumber} of a wish-fulfillment (爽文) transmigration adventure set in Genshin Impact / Teyvat.
+
+The reader has woken up as ${c.name} with their memories and powers intact. Lean into 爽文 tone: dominance shown through detail, validation arriving in concrete form, the world bending toward the protagonist.
+
+Character: ${c.name} — ${c.vision} ${c.weapon} from ${c.nation}, ${c.archetype}.
+Bio: ${c.bio}
+${awakeningBlock}
+Story so far:
+${storySoFar}
+${fromChoiceLine}
+${pacingLine(pacing)}
+
+Output language: ${outputLanguage}.
+
+Rules:
+- 3-5 paragraphs inside <scene>. Use ${c.vision} / ${c.nation} / ${c.weapon} concretely. End on dominance, declaration, or escalation rather than mere tension.
+- Show overwhelming-ness through specific consequences (a foe stops mid-sentence, a court drops to its knees, a wall splits cleanly along a single strike). Avoid generic "you feel powerful" lines.
+- Never mention prompts, choices-as-UI, questionnaire, or personality.
+- Then exactly 3 <choices>, each 3-7 words. Choices should be assertive — actions the protagonist takes, not options the world offers.
+- Then <closing>true|false</closing>.
+- Then <summary> — exactly one sentence.
+
+Output (use these tags in this order):
+<scene>
+[3-5 paragraphs]
+</scene>
+<choices>
+[choice 1]
+[choice 2]
+[choice 3]
+</choices>
+<closing>true|false</closing>
+<summary>
+[one sentence]
+</summary>`;
+}
+
+/* ------------------------------------------------------------------
  * Registry
  * ------------------------------------------------------------------ */
 
@@ -446,6 +530,21 @@ export const PROMPT_VARIANTS: PromptVariant[] = [
     },
     buildReveal: buildRevealV2,
     buildScene: buildSceneV2,
+  },
+  {
+    id: "v2-wish",
+    label: "v2 · wish-fulfillment",
+    description:
+      "转生成为雷电将军-style power fantasy. Different questionnaire, picks 3-5 canonical characters, runs a 爽文 transmigration adventure.",
+    weight: 0,
+    capabilities: {
+      questionnaire: wishQuestionnaire,
+      reveal: { kind: "candidates", min: 3, max: 5 },
+      framing: "transmigration",
+      sceneTone: "wish-fulfillment",
+    },
+    buildReveal: buildRevealWish,
+    buildScene: buildSceneWish,
   },
 ];
 

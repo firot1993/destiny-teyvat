@@ -4,20 +4,22 @@ Destiny is now a Teyvat adventure generator built with Next.js. A short seven-qu
 
 ## Experience Flow
 
-1. Title screen
-2. Seven-question Teyvat questionnaire across Mood, Desire, and Conflict
-3. Character reveal card with Vision, nation, weapon, archetype, constellation, and a Vision-acquisition vignette
+1. Title screen, with a Bookshelf entry to revisit prior runs
+2. Seven-question questionnaire — editorial (Mood / Desire / Conflict) for v1 and v2-tight, or wish-fulfillment (Origin / Power / Desire) for v2-wish
+3. Either a character reveal card (single-reveal variants) **or** a candidate gallery of 3-5 canonical Genshin characters with transmigration hooks (v2-wish), depending on the active variant
 4. Scene loop with streamed prose, three choices, and an always-available “stop here” exit
-5. Ending screen with replay and new-run actions
+5. Ending screen with replay and new-run actions; finished runs are archived into the Bookshelf, where they can be filtered by variant family
 
 ## Runtime Flow
 
-- `app/page.tsx` renders the full client flow: title -> questionnaire -> reveal -> scene loop -> ending.
-- `hooks/useAdventure.ts` owns the state machine: `idle -> questionnaire -> revealing -> reveal-shown -> scene-generating -> scene-shown -> ended`.
-- Reveal generation is one non-streaming JSON call built by `buildRevealPrompt(...)` and parsed by `parseReveal(...)`.
+- `app/page.tsx` renders the full client flow: title -> questionnaire -> reveal *or* candidate-pick -> scene loop -> ending, plus a Bookshelf overlay over the title.
+- `hooks/useAdventure.ts` owns the state machine: `idle -> bookshelf | questionnaire -> revealing | candidates-generating -> reveal-shown | candidate-pick -> scene-generating -> scene-shown -> ended`.
+- For single-reveal variants (v1, v2-tight), reveal generation is one non-streaming JSON call built by `buildRevealPrompt(...)` and parsed by `parseReveal(...)`.
+- For the v2-wish variant, the questionnaire feeds into `buildCandidatesPrompt(...)` against a code-side canonical roster; `parseCandidates(...)` returns 3-5 canon characters with awakening hooks, the user picks one, and play begins as a transmigration adventure into that canonical role.
+- After a reveal, the hook fires a best-effort `/api/imagine` call (xAI Imagine) to render a Genshin-style character portrait that's shown on the reveal card. v2-wish fires the same call once per candidate. Image generation never blocks the flow.
 - Scene generation is one streamed-or-fallback call per scene built by `buildScenePrompt(...)` and parsed by `parseSceneStream(...)`.
 - The scene prompt includes a pacing matrix that pushes toward closure by scene 5-7, with a hard cap at scene 10.
-- A prompt switch system (`lib/teyvat/promptVariants.ts` + `lib/teyvat/promptSwitch.ts`) drives both A/B testing and frontend debugging: each call dispatches through a named variant (`v1` editorial baseline, `v2-tight` concise alternate), picked by `?promptVariant=<id>` → `localStorage` → weighted-random sticky assignment.
+- A prompt switch system (`lib/teyvat/promptVariants.ts` + `lib/teyvat/promptSwitch.ts`) drives A/B testing and frontend debugging: each call dispatches through a named variant — `v1` (editorial baseline), `v2-tight` (concise alternate), `v2-wish` (wish-fulfillment / 爽文, opt-in only) — picked by `?promptVariant=<id>` → `localStorage` → weighted-random sticky assignment.
 - Provider retries, fallback providers, daily quota headers, per-IP throttling, and optional telemetry remain in the shared runtime.
 
 ## Architecture
@@ -25,15 +27,20 @@ Destiny is now a Teyvat adventure generator built with Next.js. A short seven-qu
 ```text
 app/page.tsx
   ├─ components/teyvat/TitleScreen.tsx
+  ├─ components/teyvat/Bookshelf.tsx
   ├─ components/teyvat/Questionnaire.tsx
   ├─ components/teyvat/RevealCard.tsx
+  ├─ components/teyvat/CandidateGallery.tsx
   ├─ components/teyvat/SceneView.tsx
   ├─ components/teyvat/AdventureLog.tsx
   └─ components/teyvat/Ending.tsx
 
 hooks/useAdventure.ts
   ├─ lib/teyvat/questionnaire.ts
+  ├─ lib/teyvat/questionnaires/{editorialQuestionnaire,wishQuestionnaire}.ts
   ├─ lib/teyvat/prompts.ts
+  ├─ lib/teyvat/candidates.ts
+  ├─ lib/teyvat/canonRoster.ts
   ├─ lib/teyvat/character.ts
   ├─ lib/teyvat/scenes.ts
   ├─ lib/teyvat/elements.ts
@@ -44,6 +51,9 @@ app/api/generate/route.ts
   ├─ lib/providers.ts
   ├─ lib/rateLimit.ts
   └─ lib/telemetry.ts
+
+app/api/imagine/route.ts
+  └─ lib/rateLimit.ts
 ```
 
 ## Quick Start
@@ -99,15 +109,18 @@ npm run db:stop
 
 - `app/page.tsx` — top-level flow and settings UI
 - `app/api/generate/route.ts` — provider proxy, rate limiting, daily quotas, and streaming pass-through
+- `app/api/imagine/route.ts` — xAI image proxy for the reveal-card character portrait
 - `app/api/telemetry/route.ts` — optional best-effort session/story telemetry
-- `hooks/useAdventure.ts` — reveal + scene runtime state machine
+- `hooks/useAdventure.ts` — reveal, portrait, scene, and library runtime state machine
 - `lib/teyvat/questionnaire.ts` — seven-question staged questionnaire schema
 - `lib/teyvat/prompts.ts` — public reveal/scene builders and parsers (dispatches by variant id)
 - `lib/teyvat/promptVariants.ts` — prompt variant registry (`v1` baseline, `v2-tight` alternate)
 - `lib/teyvat/promptSwitch.ts` — variant resolver and debug picker hooks (URL / localStorage / weighted-random)
 - `lib/teyvat/character.ts` — reveal types and validation
 - `lib/teyvat/scenes.ts` — scene/adventure types
-- `lib/teyvat/storage.ts` — localStorage persistence for in-progress adventures
+- `lib/teyvat/storage.ts` — localStorage persistence for in-progress adventures and the Bookshelf library archive
+- `lib/teyvat/canonRoster.ts` — canonical Genshin character roster (~25 entries) used by v2-wish to source candidates
+- `lib/teyvat/candidates.ts` — v2-wish candidate pre-filter, prompt builder, and response parser
 - `lib/teyvat/elements.ts` — Vision/nation/weapon enums and element palettes
 - `lib/teyvat/theme.ts` — parchment theme tokens and per-Vision tinting
 - `components/teyvat/*` — title, questionnaire, reveal, scene, log, and ending components
@@ -116,12 +129,14 @@ npm run db:stop
 ## Persistence And Telemetry
 
 - In-progress adventures are saved to `localStorage` so a refresh can resume from the current reveal or scene state.
+- Completed (or user-stopped) adventures are archived into a separate Bookshelf library in `localStorage` and can be revisited from the title screen.
 - `lib/db.ts` and `lib/telemetry.ts` remain best-effort: when Supabase is unset, they silently no-op.
 - `/api/generate` can still record LLM calls when telemetry is configured.
 
 ## Rate Limiting And Providers
 
 - `/api/generate` keeps per-IP throttling plus a global daily cap.
+- `/api/imagine` reuses the same per-IP rate limiter and returns 503 when `XAI_API_KEY` is unset.
 - `callProvider(...)` retries retryable upstream failures with exponential backoff.
 - `callProviderWithFallbacks(...)` falls through to `NEXT_PUBLIC_FALLBACK_PROVIDERS` when configured.
 - Streaming support remains available for OpenAI-compatible upstreams through the shared provider layer.

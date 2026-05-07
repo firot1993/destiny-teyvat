@@ -1,7 +1,12 @@
 import type { Language } from "@/types";
 import type { Framing } from "@/lib/teyvat/character";
 import type { AdventureState } from "@/lib/teyvat/scenes";
-import { TEYVAT_STEPS, type TeyvatAnswers } from "@/lib/teyvat/questionnaire";
+import {
+  TEYVAT_STEPS,
+  type QuestionnaireSchema,
+  type TeyvatAnswers,
+} from "@/lib/teyvat/questionnaire";
+import { editorialQuestionnaire } from "@/lib/teyvat/questionnaires/editorialQuestionnaire";
 
 const LANG_NAMES: Record<Language, string> = {
   en: "English",
@@ -380,6 +385,17 @@ Output (use these tags in this order):
  * Registry
  * ------------------------------------------------------------------ */
 
+export type RevealContract =
+  | { kind: "single" }
+  | { kind: "candidates"; min: number; max: number };
+
+export interface PromptVariantCapabilities {
+  questionnaire: QuestionnaireSchema;
+  reveal: RevealContract;
+  framing: "protagonist-or-companion" | "transmigration";
+  sceneTone: "editorial" | "wish-fulfillment";
+}
+
 export interface PromptVariantMeta {
   id: string;
   label: string;
@@ -388,6 +404,7 @@ export interface PromptVariantMeta {
 }
 
 export interface PromptVariant extends PromptVariantMeta {
+  capabilities: PromptVariantCapabilities;
   buildReveal(answers: TeyvatAnswers, framing: Framing, language: Language): string;
   buildScene(
     state: AdventureState,
@@ -406,6 +423,12 @@ export const PROMPT_VARIANTS: PromptVariant[] = [
     description:
       "The shipped reveal/scene prompts with the soft mapping table. Default arm of the A/B split.",
     weight: 1,
+    capabilities: {
+      questionnaire: editorialQuestionnaire,
+      reveal: { kind: "single" },
+      framing: "protagonist-or-companion",
+      sceneTone: "editorial",
+    },
     buildReveal: buildRevealV1,
     buildScene: buildSceneV1,
   },
@@ -415,6 +438,12 @@ export const PROMPT_VARIANTS: PromptVariant[] = [
     description:
       "Concise alternate: drops the soft mapping table and rewrites constraints as hard rules. Hypothesis: sharper output on strong models.",
     weight: 1,
+    capabilities: {
+      questionnaire: editorialQuestionnaire,
+      reveal: { kind: "single" },
+      framing: "protagonist-or-companion",
+      sceneTone: "editorial",
+    },
     buildReveal: buildRevealV2,
     buildScene: buildSceneV2,
   },

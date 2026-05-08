@@ -12,30 +12,32 @@ Destiny is now a Teyvat adventure generator built with Next.js. A short seven-qu
 
 ## Runtime Flow
 
-- `app/page.tsx` renders the full client flow: title -> questionnaire -> reveal *or* fated-direction-pick -> scene loop -> ending, plus a Bookshelf overlay over the title.
-- `hooks/useAdventure.ts` owns the state machine: `idle -> bookshelf | questionnaire -> revealing | directions-generating -> reveal-shown | direction-pick -> scene-generating -> scene-shown -> ended`.
+- `app/page.tsx` is a **snap-scroll document**: a single `overflow-y: scroll; scroll-snap-type: y mandatory` container with one full-viewport stage per screen. All stages (title, chapter intros, questions, reveal, scenes, ending) are built into the document at once; `scrollToStageDelta(±1)` handles programmatic navigation. There is no phase-gated routing — the document grows as the adventure progresses.
+- Stages use three visual tiers from `lib/teyvat/stageTiers.ts`: `atmospheric` (warm parchment — title and chapter intros), `reading` (cream — questions and scenes), `theatrical` (deep ink — reveal). Each tier is palette-tinted by the active Vision element.
+- `hooks/useAdventure.ts` exposes `currentStageIndex`, `answers`, `updateAnswer`, `commitReveal`, `enterWorld`, `pickDirection`, `chooseChoice` (with first-class branching), `switchToSibling`, `siblingsAt`, `takenChoicesAt`, `scrollToStageDelta`, and `docRef`.
+- Scene state is a **tree** (`SceneTree`) — not a flat array. The active path is `SceneTree.activePath`; `activeScenesOf(state)` returns it as an ordered array. Choosing a new option on a past scene forks a sibling branch; choosing an existing option switches to it without an LLM call. Arrow keys and a pager navigate between siblings.
+- The **reveal is the commit gate**: questionnaire answers are mutable until `commitReveal()` is called. Once committed, the seal is permanent and `isCommitted` drives the `sealed` prop on each question stage.
 - For single-reveal variants (v1, v2-tight), reveal generation is one non-streaming JSON call built by `buildRevealPrompt(...)` and parsed by `parseReveal(...)`.
-- For the v2-wish variant, `pickFatedCharacter(...)` deterministically picks the single highest-scoring canon character from `CANON_ROSTER` for the reader's answers, then `buildFatedRevealPrompt(...)` makes one non-streaming JSON call that returns a "why this character" line plus three distinct story directions (revenge / ascent / romance / etc.). The user picks one direction; that direction's title and hook are persisted on the adventure and threaded into every scene prompt as a story-arc anchor.
-- After a reveal, the hook fires a best-effort `/api/imagine` call (xAI Imagine) to render a Genshin-style character portrait that's shown on the reveal card. v2-wish fires the same call once for the fated character. Image generation never blocks the flow.
+- For the v2-wish variant, `pickFatedCharacter(...)` deterministically picks the single highest-scoring canon character from `CANON_ROSTER` for the reader's answers, then `buildFatedRevealPrompt(...)` makes one non-streaming JSON call that returns a "why this character" line plus three distinct story directions. The user picks one direction; that direction's title and hook are persisted on the adventure and threaded into every scene prompt as a story-arc anchor.
+- After a reveal, the hook fires a best-effort `/api/imagine` call (xAI Imagine) to render a Genshin-style character portrait shown in `RevealStage`. Image generation never blocks the flow.
 - Scene generation is one streamed-or-fallback call per scene built by `buildScenePrompt(...)` and parsed by `parseSceneStream(...)`.
 - The scene prompt includes a pacing matrix that pushes toward closure by scene 5-7, with a hard cap at scene 10.
 - A prompt switch system (`lib/teyvat/promptVariants.ts` + `lib/teyvat/promptSwitch.ts`) drives A/B testing and frontend debugging: each call dispatches through a named variant — `v1` (editorial baseline), `v2-tight` (concise alternate), `v2-wish` (wish-fulfillment / 爽文, opt-in only) — picked by `?promptVariant=<id>` → `localStorage` → weighted-random sticky assignment.
-- Pre-scene stages support back-nav with answer-hash caching: a `BackButton` (Esc-bound) appears in the top-left of questionnaire / reveal / direction-pick. Going back to the questionnaire prefills the user's last answers; resubmitting the same answers restores the cached reveal/fated pick without an LLM call. Caches live in `destiny-last-{answers,reveal,fated}` and are wiped by `startOver`.
+- Back-nav with answer-hash caching: resubmitting the same questionnaire answers restores the cached reveal/fated pick without an LLM call. Caches live in `destiny-last-{answers,reveal,fated}` and are wiped by `startOver`.
 - Provider retries, fallback providers, daily quota headers, per-IP throttling, and optional telemetry remain in the shared runtime.
 
 ## Architecture
 
 ```text
-app/page.tsx
-  ├─ components/teyvat/TitleScreen.tsx
-  ├─ components/teyvat/BackButton.tsx
-  ├─ components/teyvat/Bookshelf.tsx
-  ├─ components/teyvat/Questionnaire.tsx
-  ├─ components/teyvat/RevealCard.tsx
-  ├─ components/teyvat/DirectionPicker.tsx
-  ├─ components/teyvat/SceneView.tsx
-  ├─ components/teyvat/AdventureLog.tsx
-  └─ components/teyvat/Ending.tsx
+app/page.tsx  (snap-scroll document)
+  ├─ components/teyvat/stages/TitleStage.tsx
+  ├─ components/teyvat/stages/ChapterIntroStage.tsx
+  ├─ components/teyvat/stages/QuestionStage.tsx
+  ├─ components/teyvat/stages/RevealStage.tsx
+  ├─ components/teyvat/stages/SceneStage.tsx
+  │    └─ components/teyvat/BranchPager.tsx
+  ├─ components/teyvat/stages/EndingStage.tsx
+  └─ components/teyvat/Bookshelf.tsx
 
 hooks/useAdventure.ts
   ├─ lib/teyvat/questionnaire.ts
@@ -109,23 +111,26 @@ npm run db:stop
 
 ## Key Files
 
-- `app/page.tsx` — top-level flow and settings UI
+- `app/page.tsx` — snap-scroll document: builds all stages; contains the HUD (lang toggle + gear settings icon), Bookshelf overlay, and quota badge
 - `app/api/generate/route.ts` — provider proxy, rate limiting, daily quotas, and streaming pass-through
-- `app/api/imagine/route.ts` — xAI image proxy for the reveal-card character portrait
+- `app/api/imagine/route.ts` — xAI image proxy for the reveal-stage character portrait
 - `app/api/telemetry/route.ts` — optional best-effort session/story telemetry
-- `hooks/useAdventure.ts` — reveal, portrait, scene, and library runtime state machine
-- `lib/teyvat/questionnaire.ts` — seven-question staged questionnaire schema
+- `hooks/useAdventure.ts` — reveal, portrait, scene, branching, and library runtime; exposes `currentStageIndex`, `chooseChoice`, `siblingsAt`, `takenChoicesAt`, `switchToSibling`
+- `lib/teyvat/stageTiers.ts` — three visual tiers (`atmospheric`, `reading`, `theatrical`) and per-Vision palette tokens
+- `lib/teyvat/scenes.ts` — scene/adventure types; `SceneTree`, `SceneNode`, `activeScenesOf`, `forkAt`, `switchSibling`
+- `lib/teyvat/questionnaire.ts` — `QuestionnaireSchema` type and editorial-schema re-exports
 - `lib/teyvat/prompts.ts` — public reveal/scene builders and parsers (dispatches by variant id)
-- `lib/teyvat/promptVariants.ts` — prompt variant registry (`v1` baseline, `v2-tight` alternate)
+- `lib/teyvat/promptVariants.ts` — prompt variant registry (`v1` baseline, `v2-tight` alternate, `v2-wish` wish-fulfillment)
 - `lib/teyvat/promptSwitch.ts` — variant resolver and debug picker hooks (URL / localStorage / weighted-random)
 - `lib/teyvat/character.ts` — reveal types and validation
-- `lib/teyvat/scenes.ts` — scene/adventure types
 - `lib/teyvat/storage.ts` — localStorage persistence for in-progress adventures and the Bookshelf library archive
 - `lib/teyvat/canonRoster.ts` — canonical Genshin character roster (~25 entries) used by v2-wish as the fated-character pool
 - `lib/teyvat/candidates.ts` — v2-wish prefilter, deterministic top-1 picker (`pickFatedCharacter`), fated-reveal prompt builder, and response parser (returns `{ why, directions[3] }`)
 - `lib/teyvat/elements.ts` — Vision/nation/weapon enums and element palettes
 - `lib/teyvat/theme.ts` — parchment theme tokens and per-Vision tinting
-- `components/teyvat/*` — title, questionnaire, reveal, scene, log, and ending components
+- `components/teyvat/stages/` — all snap-scroll stage components (TitleStage, ChapterIntroStage, QuestionStage, RevealStage, SceneStage, EndingStage, StageWrapper)
+- `components/teyvat/BranchPager.tsx` — sibling-branch pager shown above a scene when branches ≥ 2
+- `components/teyvat/Bookshelf.tsx` — archived-runs overlay
 - `i18n/index.tsx` — English and Simplified Chinese copy
 
 ## Persistence And Telemetry

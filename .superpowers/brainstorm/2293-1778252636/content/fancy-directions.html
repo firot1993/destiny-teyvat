@@ -1,0 +1,400 @@
+<h2>Three "fancy" directions for the snap-scroll stages</h2>
+<p class="subtitle">Same Q2 stage. Click the voice that feels right — or pick a combination.</p>
+
+<style>
+  .voice-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+    margin-top: 14px;
+  }
+  @media (min-width: 1100px) {
+    .voice-grid { grid-template-columns: 1fr 1fr 1fr; }
+  }
+
+  .voice-card {
+    background: transparent;
+    cursor: pointer;
+    transition: transform 200ms ease;
+  }
+  .voice-card:hover { transform: translateY(-3px); }
+
+  .voice-name {
+    font-size: 11px;
+    letter-spacing: 0.20em;
+    text-transform: uppercase;
+    color: #6b6359;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .voice-blurb {
+    font-size: 12px;
+    color: #4a4238;
+    line-height: 1.6;
+    margin: 8px 0 0;
+  }
+  .voice-cost {
+    font-size: 10px;
+    color: #8a7e6c;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    margin-top: 8px;
+  }
+
+  .vp {
+    height: 460px;
+    border-radius: 4px;
+    border: 1px solid rgba(31,27,21,0.10);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 36px 28px;
+    text-align: center;
+  }
+
+  /* ------- Voice A: Cinematic ------- */
+  .vp.cinematic {
+    background: linear-gradient(180deg, #f5ecd9 0%, #eadcc0 100%);
+  }
+  .cinematic::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 90px;
+    background: linear-gradient(180deg, rgba(31,27,21,0.16), transparent);
+    pointer-events: none;
+  }
+  .cinematic::after {
+    content: "";
+    position: absolute; bottom: 0; left: 0; right: 0; height: 110px;
+    background: linear-gradient(0deg, rgba(31,27,21,0.18), transparent);
+    pointer-events: none;
+  }
+  .cinematic .eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.30em;
+    text-transform: uppercase;
+    color: #8a7e6c;
+    margin-bottom: 26px;
+  }
+  .cinematic .question {
+    font-family: Georgia, serif;
+    font-size: 42px;
+    font-weight: 300;
+    color: #2a2520;
+    line-height: 1.05;
+    margin: 0 0 36px;
+    max-width: 460px;
+    letter-spacing: -0.005em;
+  }
+  .cinematic .opts {
+    display: grid;
+    gap: 14px;
+    max-width: 440px;
+    width: 100%;
+  }
+  .cinematic .opt {
+    padding: 18px 0;
+    border: none;
+    background: transparent;
+    border-bottom: 1px solid rgba(31,27,21,0.18);
+    font-family: Georgia, serif;
+    font-size: 17px;
+    color: #4a4238;
+    text-align: center;
+    transition: color 200ms, letter-spacing 200ms;
+  }
+  .cinematic .opt:hover { color: #2a2520; letter-spacing: 0.03em; }
+  .cinematic .opt.selected { color: #2a2520; font-style: italic; border-bottom-color: #2a2520; }
+  .cinematic .scroll-hint {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(31,27,21,0.55);
+    font-size: 18px;
+    animation: bob 2.4s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translate(-50%, 0); }
+    50% { transform: translate(-50%, 5px); }
+  }
+
+  /* ------- Voice B: Illuminated manuscript ------- */
+  .vp.illuminated {
+    background:
+      radial-gradient(ellipse at top, rgba(245,205,135,0.18), transparent 60%),
+      linear-gradient(180deg, #f5ecd9 0%, #e8d8b8 100%);
+    padding: 36px 22px;
+  }
+  .illuminated::before {
+    content: "";
+    position: absolute; top: 14px; left: 14px; right: 14px; bottom: 14px;
+    border: 1px solid rgba(140,100,50,0.35);
+    pointer-events: none;
+  }
+  .illuminated::after {
+    content: "";
+    position: absolute; top: 22px; left: 22px; right: 22px; bottom: 22px;
+    border: 1px solid rgba(140,100,50,0.18);
+    pointer-events: none;
+  }
+  .illum-corner {
+    position: absolute;
+    width: 30px; height: 30px;
+    color: rgba(140,100,50,0.6);
+    font-size: 22px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Georgia, serif;
+  }
+  .illum-corner.tl { top: 8px; left: 8px; }
+  .illum-corner.tr { top: 8px; right: 8px; transform: scaleX(-1); }
+  .illum-corner.bl { bottom: 8px; left: 8px; transform: scaleY(-1); }
+  .illum-corner.br { bottom: 8px; right: 8px; transform: scale(-1, -1); }
+  .illuminated .marginalia {
+    position: absolute;
+    top: 50%;
+    left: 32px;
+    transform: translateY(-50%) rotate(-90deg);
+    transform-origin: left center;
+    font-family: "Times New Roman", serif;
+    font-style: italic;
+    font-size: 11px;
+    color: rgba(140,100,50,0.7);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .illuminated .chapter-roman {
+    font-family: Georgia, serif;
+    font-size: 13px;
+    color: rgba(140,100,50,0.85);
+    letter-spacing: 0.4em;
+    margin-bottom: 14px;
+  }
+  .illuminated .question-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 28px;
+    max-width: 380px;
+  }
+  .illuminated .dropcap {
+    font-family: Georgia, serif;
+    font-size: 56px;
+    line-height: 0.9;
+    color: rgba(140,100,50,0.95);
+    font-weight: 500;
+    padding-right: 4px;
+  }
+  .illuminated .question {
+    font-family: Georgia, serif;
+    font-size: 22px;
+    color: #2a2520;
+    line-height: 1.25;
+    text-align: left;
+    margin: 4px 0 0;
+    flex: 1;
+  }
+  .illuminated .ornament {
+    font-size: 14px;
+    color: rgba(140,100,50,0.7);
+    letter-spacing: 0.5em;
+    margin-bottom: 16px;
+  }
+  .illuminated .opts {
+    display: grid;
+    gap: 6px;
+    max-width: 380px;
+    width: 100%;
+  }
+  .illuminated .opt {
+    padding: 9px 0;
+    border: none;
+    background: transparent;
+    font-family: Georgia, serif;
+    font-size: 13px;
+    color: #4a4238;
+    text-align: center;
+    font-style: italic;
+  }
+  .illuminated .opt.selected {
+    color: rgba(140,100,50,0.95);
+    font-style: italic;
+  }
+  .illuminated .opt.selected::before {
+    content: "❧ ";
+    color: rgba(140,100,50,0.85);
+    font-style: normal;
+  }
+
+  /* ------- Voice C: Atmospheric layers ------- */
+  .vp.atmospheric {
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(245,205,135,0.4), transparent 55%),
+      radial-gradient(ellipse at 70% 80%, rgba(120,150,180,0.18), transparent 60%),
+      linear-gradient(180deg, #f5ecd9 0%, #d8d0bc 100%);
+    overflow: hidden;
+  }
+  .horizon {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 35%;
+    background:
+      linear-gradient(180deg, transparent, rgba(60,50,40,0.05) 60%, rgba(60,50,40,0.10));
+    pointer-events: none;
+  }
+  .horizon::after {
+    content: "";
+    position: absolute;
+    bottom: 26%;
+    left: 0; right: 0;
+    height: 1px;
+    background: rgba(60,50,40,0.20);
+  }
+  .mountains {
+    position: absolute;
+    bottom: 26%;
+    left: 0; right: 0;
+    height: 52px;
+    pointer-events: none;
+    opacity: 0.32;
+  }
+  .particle {
+    position: absolute;
+    background: rgba(180,140,80,0.5);
+    border-radius: 50%;
+    animation: drift 9s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes drift {
+    0% { transform: translate(0, 0); opacity: 0; }
+    20% { opacity: 0.7; }
+    80% { opacity: 0.5; }
+    100% { transform: translate(60px, -40px); opacity: 0; }
+  }
+  .atmospheric .vp-content {
+    position: relative;
+    z-index: 2;
+  }
+  .atmospheric .eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #8a7e6c;
+    margin-bottom: 22px;
+  }
+  .atmospheric .question {
+    font-family: Georgia, serif;
+    font-size: 30px;
+    color: #2a2520;
+    line-height: 1.15;
+    margin: 0 0 28px;
+    max-width: 440px;
+    text-shadow: 0 1px 0 rgba(255,250,235,0.5);
+  }
+  .atmospheric .opts {
+    display: grid;
+    gap: 10px;
+    max-width: 420px;
+    width: 100%;
+  }
+  .atmospheric .opt {
+    padding: 13px 16px;
+    background: rgba(255,250,235,0.45);
+    border: 1px solid rgba(31,27,21,0.10);
+    font-family: Georgia, serif;
+    font-size: 14px;
+    color: #4a4238;
+    text-align: center;
+    backdrop-filter: blur(2px);
+    transition: background 200ms, transform 200ms;
+  }
+  .atmospheric .opt:hover { background: rgba(255,250,235,0.7); transform: translateY(-1px); }
+  .atmospheric .opt.selected {
+    background: rgba(255,250,235,0.85);
+    border-color: #2a2520;
+    color: #2a2520;
+  }
+</style>
+
+<div class="voice-grid">
+  <!-- Voice A: Cinematic -->
+  <div class="card voice-card" data-choice="cinematic" onclick="toggleSelect(this)">
+    <p class="voice-name">A — Cinematic</p>
+    <div class="vp cinematic">
+      <p class="eyebrow">Mood · ii of vii</p>
+      <h3 class="question">What calls to you across the wind?</h3>
+      <div class="opts">
+        <div class="opt">A bell tolling somewhere unseen</div>
+        <div class="opt selected">A name you don't yet know</div>
+        <div class="opt">The hush before a storm</div>
+        <div class="opt">Nothing — only the wind itself</div>
+      </div>
+      <div class="scroll-hint">⌄</div>
+    </div>
+    <p class="voice-blurb">Restraint as drama. Top/bottom letterbox shadow makes the stage feel like a frame in a film. Huge type, generous whitespace. Options sit on hairlines. Selected option italicizes — that's the only flourish. The motion (smooth scroll, subtle bob on the chevron) carries the show.</p>
+    <p class="voice-cost">cost · low–medium · CSS only</p>
+  </div>
+
+  <!-- Voice B: Illuminated manuscript -->
+  <div class="card voice-card" data-choice="illuminated" onclick="toggleSelect(this)">
+    <p class="voice-name">B — Illuminated</p>
+    <div class="vp illuminated">
+      <span class="illum-corner tl">❦</span>
+      <span class="illum-corner tr">❦</span>
+      <span class="illum-corner bl">❦</span>
+      <span class="illum-corner br">❦</span>
+      <p class="marginalia">Mood</p>
+      <p class="chapter-roman">II</p>
+      <div class="question-row">
+        <span class="dropcap">W</span>
+        <h3 class="question">hat calls to you across the wind?</h3>
+      </div>
+      <p class="ornament">❧ · ❧ · ❧</p>
+      <div class="opts">
+        <div class="opt">A bell tolling somewhere unseen</div>
+        <div class="opt selected">A name you don't yet know</div>
+        <div class="opt">The hush before a storm</div>
+        <div class="opt">Nothing — only the wind itself</div>
+      </div>
+    </div>
+    <p class="voice-blurb">Antique-book richness. Double-line frame, corner ornaments, drop cap on the question, Roman numerals for chapter, vertical marginalia, fleurons between sections. Static decoration — no motion required. Strongest editorial-mood lock; risks feeling busy at speed.</p>
+    <p class="voice-cost">cost · medium · CSS + ornament glyphs (or SVG flourishes)</p>
+  </div>
+
+  <!-- Voice C: Atmospheric -->
+  <div class="card voice-card" data-choice="atmospheric" onclick="toggleSelect(this)">
+    <p class="voice-name">C — Atmospheric</p>
+    <div class="vp atmospheric">
+      <div class="horizon">
+        <svg class="mountains" viewBox="0 0 400 52" preserveAspectRatio="none">
+          <polygon points="0,52 60,18 110,32 170,8 230,30 300,14 360,28 400,12 400,52" fill="rgba(60,50,40,0.55)"/>
+        </svg>
+      </div>
+      <span class="particle" style="top:20%; left:15%; width:4px; height:4px; animation-delay:0s;"></span>
+      <span class="particle" style="top:35%; left:78%; width:3px; height:3px; animation-delay:1.5s;"></span>
+      <span class="particle" style="top:55%; left:30%; width:5px; height:5px; animation-delay:3s;"></span>
+      <span class="particle" style="top:48%; left:62%; width:3px; height:3px; animation-delay:4.5s;"></span>
+      <span class="particle" style="top:28%; left:48%; width:4px; height:4px; animation-delay:6s;"></span>
+
+      <div class="vp-content">
+        <p class="eyebrow">Mood · 02</p>
+        <h3 class="question">What calls to you across the wind?</h3>
+        <div class="opts">
+          <div class="opt">A bell tolling somewhere unseen</div>
+          <div class="opt selected">A name you don't yet know</div>
+          <div class="opt">The hush before a storm</div>
+          <div class="opt">Nothing — only the wind itself</div>
+        </div>
+      </div>
+    </div>
+    <p class="voice-blurb">The world is alive behind the words. Soft horizon line, distant mountain silhouette, dust motes drifting on a breeze, light pooling from one corner. The page <em>breathes</em>. Particles change per chapter (dust → embers → snow → leaves). Strong sense of place; risks distracting from the question.</p>
+    <p class="voice-cost">cost · medium–high · CSS + SVG horizon, requires per-chapter art direction</p>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 28px; font-size: 13px;">These can stack — e.g., A's restraint + C's breathing world is a credible "Cinematic Atmospheric." Multi-select on the next round if you want a combination.</p>

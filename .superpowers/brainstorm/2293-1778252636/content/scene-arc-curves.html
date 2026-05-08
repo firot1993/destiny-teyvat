@@ -1,0 +1,110 @@
+<h2>Three candidate arcs for scene-number color/light</h2>
+<p class="subtitle">Each strip shows the background at scenes 1 → 10. Click the curve that best matches the arc you want.</p>
+
+<style>
+  .strip { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin: 14px 0 10px; border-radius: 4px; overflow: hidden; }
+  .panel { aspect-ratio: 3 / 5; display: flex; flex-direction: column; justify-content: flex-end; padding: 8px 6px; font-size: 9px; color: rgba(31,27,21,0.55); font-family: Georgia, serif; line-height: 1.25; }
+  .panel .num { font-size: 8px; letter-spacing: 0.18em; opacity: 0.6; margin-bottom: 4px; }
+  .panel .glyph { font-size: 14px; opacity: 0.4; margin-bottom: 4px; }
+  .arc-label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #6b6359; margin-top: 6px; }
+  .arc-blurb { font-size: 13px; color: #4a4238; line-height: 1.6; margin: 6px 0 0; }
+
+  /* Curve A — Literal day cycle */
+  .a-1 { background: linear-gradient(180deg, #f5e7c9 0%, #f0d8a8 100%); }
+  .a-2 { background: linear-gradient(180deg, #faecc4 0%, #f3d18c 100%); }
+  .a-3 { background: linear-gradient(180deg, #fbe9b3 0%, #ecd391 100%); }
+  .a-4 { background: linear-gradient(180deg, #f3dba0 0%, #d9bd7a 100%); }
+  .a-5 { background: linear-gradient(180deg, #efc887 0%, #c89255 100%); }
+  .a-6 { background: linear-gradient(180deg, #c98860 0%, #93573b 100%); }
+  .a-7 { background: linear-gradient(180deg, #7c5371 0%, #4a324d 100%); }
+  .a-8 { background: linear-gradient(180deg, #1f1d2c 0%, #0f0e1a 100%); color: rgba(245,236,217,0.5) !important; }
+  .a-9 { background: linear-gradient(180deg, #2c1d2c 0%, #4a1f25 100%); color: rgba(245,236,217,0.6) !important; }
+  .a-10 { background: linear-gradient(180deg, #f7e0b8 0%, #e8c898 100%); }
+
+  /* Curve B — Emotional storyboard */
+  .b-1 { background: linear-gradient(180deg, #f5ecd9 0%, #eadcc0 100%); }
+  .b-2 { background: linear-gradient(180deg, #e8e3d4 0%, #cfd1c4 100%); }
+  .b-3 { background: linear-gradient(180deg, #f1e8d2 0%, #ddd3b8 100%); }
+  .b-4 { background: linear-gradient(180deg, #efe4ca 0%, #d8c8a4 100%); }
+  .b-5 { background: linear-gradient(180deg, #f0c98e 0%, #c98a52 100%); }
+  .b-6 { background: linear-gradient(180deg, #8b9aa8 0%, #5d6d7e 100%); color: rgba(245,236,217,0.65) !important; }
+  .b-7 { background: linear-gradient(180deg, #4d5a6a 0%, #2d3845 100%); color: rgba(245,236,217,0.6) !important; }
+  .b-8 { background: linear-gradient(180deg, #6b1d1d 0%, #2d0a0a 100%); color: rgba(245,236,217,0.65) !important; }
+  .b-9 { background: linear-gradient(180deg, #4a4540 0%, #2a2723 100%); color: rgba(245,236,217,0.55) !important; }
+  .b-10 { background: linear-gradient(180deg, #d9e3ec 0%, #aebfd0 100%); }
+
+  /* Curve C — Vignette only (subtle) */
+  .c-base { background: linear-gradient(180deg, #f5ecd9 0%, #eadcc0 100%); position: relative; }
+  .c-base::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
+  .c-1::after { background: radial-gradient(circle at 25% 15%, rgba(245,205,135,0.55), transparent 55%); }
+  .c-2::after { background: radial-gradient(circle at 35% 20%, rgba(245,205,135,0.42), transparent 60%); }
+  .c-3::after { background: radial-gradient(circle at 50% 8%, rgba(255,228,170,0.38), transparent 65%); }
+  .c-4::after { background: radial-gradient(circle at 55% 12%, rgba(220,200,160,0.35), transparent 65%); }
+  .c-5::after { background: radial-gradient(circle at 70% 18%, rgba(228,168,110,0.45), transparent 60%); }
+  .c-6::after { background: radial-gradient(circle at 80% 28%, rgba(170,120,90,0.45), transparent 60%); }
+  .c-7::after { background: radial-gradient(circle at 80% 80%, rgba(80,60,90,0.55), transparent 55%); }
+  .c-8::after { background: radial-gradient(circle at 50% 90%, rgba(40,30,50,0.65), transparent 60%); }
+  .c-9::after { background: radial-gradient(circle at 30% 85%, rgba(110,40,50,0.55), transparent 55%); }
+  .c-10::after { background: radial-gradient(circle at 25% 15%, rgba(245,205,135,0.55), transparent 55%); }
+</style>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <p class="arc-label">Curve A — Literal day cycle</p>
+      <p class="arc-blurb">Page tracks a single day: dawn → noon → dusk → night → dawn. Reads as <em>time passing</em>. Goes very dark in the middle (panels 7–9 invert the parchment to deep night), so legibility flips. Strongest "passage" feel; most expensive on the editorial mood.</p>
+      <div class="strip">
+        <div class="panel a-1"><span class="glyph">☀</span><span class="num">01</span>dawn</div>
+        <div class="panel a-2"><span class="num">02</span>morning</div>
+        <div class="panel a-3"><span class="num">03</span>daylight</div>
+        <div class="panel a-4"><span class="num">04</span>midday</div>
+        <div class="panel a-5"><span class="num">05</span>golden</div>
+        <div class="panel a-6"><span class="num">06</span>dusk</div>
+        <div class="panel a-7"><span class="num">07</span>twilight</div>
+        <div class="panel a-8"><span class="num">08</span>night</div>
+        <div class="panel a-9"><span class="num">09</span>storm</div>
+        <div class="panel a-10"><span class="num">10</span>dawn-after</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <p class="arc-label">Curve B — Emotional storyboard</p>
+      <p class="arc-blurb">Palette tracks <em>tension</em>, not time. Warm parchment opens, cools through 2–4, warms again at 5 (false peace), storms in 6–7, ember-red climax at 8, ash at 9, cool dawn-blue at 10. Most dramatic. Mid-arc panels still invert legibility; you'd need a typography pass to keep prose readable on dark grounds.</p>
+      <div class="strip">
+        <div class="panel b-1"><span class="num">01</span>warm-open</div>
+        <div class="panel b-2"><span class="num">02</span>cool</div>
+        <div class="panel b-3"><span class="num">03</span>neutral</div>
+        <div class="panel b-4"><span class="num">04</span>neutral</div>
+        <div class="panel b-5"><span class="num">05</span>false peace</div>
+        <div class="panel b-6"><span class="num">06</span>storm</div>
+        <div class="panel b-7"><span class="num">07</span>storm-deep</div>
+        <div class="panel b-8"><span class="num">08</span>ember</div>
+        <div class="panel b-9"><span class="num">09</span>ash</div>
+        <div class="panel b-10"><span class="num">10</span>dawn-cool</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <p class="arc-label">Curve C — Light-source vignette only</p>
+      <p class="arc-blurb">Parchment ground stays. A radial light glow drifts across the page — top-left dawn → overhead noon → low-right dusk → bottom night-glow → returning dawn. Same prose readability everywhere. Subtler. Reads as <em>light moving across a single room</em> rather than the world changing.</p>
+      <div class="strip">
+        <div class="panel c-base c-1"><span class="num">01</span>dawn-glow</div>
+        <div class="panel c-base c-2"><span class="num">02</span>rising</div>
+        <div class="panel c-base c-3"><span class="num">03</span>overhead</div>
+        <div class="panel c-base c-4"><span class="num">04</span>overhead</div>
+        <div class="panel c-base c-5"><span class="num">05</span>warm-low</div>
+        <div class="panel c-base c-6"><span class="num">06</span>dusk-low</div>
+        <div class="panel c-base c-7"><span class="num">07</span>cold-corner</div>
+        <div class="panel c-base c-8"><span class="num">08</span>night-glow</div>
+        <div class="panel c-base c-9"><span class="num">09</span>ember-low</div>
+        <div class="panel c-base c-10"><span class="num">10</span>dawn-glow</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 28px; font-size: 13px;">All three are <em>scene-number-driven</em> — no LLM/prompt change. The differences are how loud the shift is and whether prose readability is uniform across the run.</p>

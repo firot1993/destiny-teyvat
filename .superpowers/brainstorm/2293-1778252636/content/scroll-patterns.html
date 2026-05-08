@@ -1,0 +1,172 @@
+<h2>How does past content behave as the journey grows?</h2>
+<p class="subtitle">Same point in the run (mid-scene 5). Three patterns for what's visible above. Click the one that matches your mental model.</p>
+
+<style>
+  .pattern-mock {
+    height: 520px;
+    overflow: hidden;
+    position: relative;
+    background: linear-gradient(180deg, #f5ecd9 0%, #eadcc0 100%);
+    border: 1px solid rgba(31,27,21,0.10);
+    border-radius: 4px;
+    font-family: Georgia, serif;
+    color: #2a2520;
+    padding: 18px 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .pattern-mock .scrollbar {
+    position: absolute;
+    right: 4px;
+    top: 18px;
+    bottom: 18px;
+    width: 3px;
+    background: rgba(31,27,21,0.08);
+    border-radius: 2px;
+  }
+  .pattern-mock .scrollbar-thumb {
+    position: absolute;
+    right: 0;
+    width: 3px;
+    background: rgba(31,27,21,0.35);
+    border-radius: 2px;
+  }
+  .pattern-mock .gradient-fade {
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 60px;
+    background: linear-gradient(180deg, rgba(245,236,217,0.95), transparent);
+    pointer-events: none;
+  }
+
+  .block {
+    border-left: 2px solid rgba(31,27,21,0.18);
+    padding: 4px 0 4px 10px;
+  }
+  .block .label { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: #8a7e6c; margin-bottom: 4px; }
+  .block .text { font-size: 11px; line-height: 1.5; color: #5a4f44; }
+  .block .text.full { font-size: 12px; color: #2a2520; }
+
+  .scene-marker { font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase; color: #8a7e6c; margin-top: 4px; }
+
+  /* Pattern 1: Living manuscript — everything full-fidelity */
+  .p1 .block { padding: 6px 0 6px 10px; }
+  .p1 .block .text { font-size: 12px; color: #2a2520; line-height: 1.55; }
+  .p1 .choice-mark { font-size: 11px; color: #6b5d4c; font-style: italic; padding-left: 14px; border-left: 2px solid rgba(180,140,80,0.6); }
+  .p1 .active { background: rgba(255,255,255,0.35); padding: 8px 10px; border-left: 3px solid #2a2520; }
+
+  /* Pattern 2: Anchored present — past fades */
+  .p2 .past-far { opacity: 0.32; font-size: 10px; }
+  .p2 .past-mid { opacity: 0.55; font-size: 11px; }
+  .p2 .past-near { opacity: 0.75; font-size: 12px; }
+  .p2 .active { background: rgba(255,255,255,0.45); padding: 10px 12px; border-left: 3px solid #2a2520; font-size: 13px; line-height: 1.55; }
+
+  /* Pattern 3: Collapsing diary — past becomes chips */
+  .p3 .chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(255,255,255,0.32);
+    border: 1px solid rgba(31,27,21,0.08);
+    font-size: 10px;
+    color: #5a4f44;
+  }
+  .p3 .chip .chev { color: #8a7e6c; }
+  .p3 .active { background: rgba(255,255,255,0.5); padding: 14px; border-left: 3px solid #2a2520; font-size: 13px; line-height: 1.6; margin-top: 8px; }
+  .p3 .active-label { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: #8a7e6c; margin-bottom: 6px; }
+
+  .pattern-blurb { font-size: 13px; color: #4a4238; line-height: 1.65; margin: 14px 0 0; }
+  .pattern-name { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: #6b6359; margin-bottom: 4px; font-weight: 600; }
+</style>
+
+<div class="cards">
+  <!-- Pattern 1: Living Manuscript -->
+  <div class="card" data-choice="manuscript" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <p class="pattern-name">Pattern 1 — Living Manuscript</p>
+      <div class="pattern-mock p1">
+        <div class="gradient-fade"></div>
+        <div class="scrollbar"><div class="scrollbar-thumb" style="top: 65%; height: 12%;"></div></div>
+
+        <div class="block">
+          <div class="label">Mood — drifting like fog</div>
+        </div>
+        <div class="block">
+          <div class="label">Desire — to be seen, just once</div>
+        </div>
+        <div class="block">
+          <div class="label">Reveal — Lirien of Mondstadt, Anemo</div>
+        </div>
+        <div class="scene-marker">— scene I —</div>
+        <div class="block">
+          <div class="text">The bell tower at Mondstadt struck six as Lirien crossed the cathedral square...</div>
+          <div class="choice-mark">◆ followed the cloaked figure</div>
+        </div>
+        <div class="scene-marker">— scene II —</div>
+        <div class="block">
+          <div class="text">The figure led her past the city wall and down toward the lake...</div>
+          <div class="choice-mark">◆ asked who they were</div>
+        </div>
+        <div class="scene-marker">— scene V —</div>
+        <div class="block active">
+          <div class="text full">Now the wind itself seemed to hold its breath. Lirien felt the Vision at her hip pulse — three quick beats, like a heart not her own. The figure turned. <em>Cursor blinks.</em></div>
+        </div>
+      </div>
+      <p class="pattern-blurb">Everything stays full-fidelity. Past scenes are still readable in full. The document grows long. Re-reading is effortless; after 10 scenes the scroll is meaty.</p>
+    </div>
+  </div>
+
+  <!-- Pattern 2: Anchored Present -->
+  <div class="card" data-choice="anchored" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <p class="pattern-name">Pattern 2 — Anchored Present</p>
+      <div class="pattern-mock p2">
+        <div class="gradient-fade"></div>
+        <div class="scrollbar"><div class="scrollbar-thumb" style="top: 70%; height: 14%;"></div></div>
+
+        <div class="block past-far">
+          <div class="text">— mood, desire, conflict —</div>
+        </div>
+        <div class="block past-far">
+          <div class="text">Lirien of Mondstadt — Anemo</div>
+        </div>
+        <div class="block past-mid">
+          <div class="text">scene I · the bell at six · followed the figure</div>
+        </div>
+        <div class="block past-near">
+          <div class="text">scene II · past the wall, toward the lake · asked who they were</div>
+        </div>
+        <div class="block active">
+          <div class="label">scene V</div>
+          Now the wind itself seemed to hold its breath. Lirien felt the Vision at her hip pulse — three quick beats, like a heart not her own. The figure turned. <em>Cursor blinks.</em>
+        </div>
+      </div>
+      <p class="pattern-blurb">Past content soft-fades — smaller, lower opacity. Current scene is bright and centered. Eye is always drawn forward. You can scroll up to "remember," but the focus is the present beat.</p>
+    </div>
+  </div>
+
+  <!-- Pattern 3: Collapsing Diary -->
+  <div class="card" data-choice="diary" onclick="toggleSelect(this)">
+    <div class="card-body">
+      <p class="pattern-name">Pattern 3 — Collapsing Diary</p>
+      <div class="pattern-mock p3">
+        <div class="scrollbar"><div class="scrollbar-thumb" style="top: 0%; height: 90%;"></div></div>
+
+        <div class="chip"><span class="chev">▸</span> mood, desire, conflict</div>
+        <div class="chip"><span class="chev">▸</span> Lirien · Anemo · Mondstadt</div>
+        <div class="chip"><span class="chev">▸</span> scene I — followed the figure</div>
+        <div class="chip"><span class="chev">▸</span> scene II — asked who they were</div>
+        <div class="chip"><span class="chev">▸</span> scene III — drew the Vision</div>
+        <div class="chip"><span class="chev">▸</span> scene IV — let her speak first</div>
+        <div class="active">
+          <div class="active-label">scene V — current</div>
+          Now the wind itself seemed to hold its breath. Lirien felt the Vision at her hip pulse — three quick beats, like a heart not her own. The figure turned. <em>Cursor blinks.</em>
+        </div>
+      </div>
+      <p class="pattern-blurb">Past collapses to one-line chips. Tap a chip to expand and re-read. The visible document stays short. Most readable on small screens; least immersive — the past is "out of frame" until you ask for it.</p>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 24px; font-size: 13px;">All three keep the scroll-not-jump feel. The difference is how much the past <em>weighs</em> on the present view.</p>

@@ -20,10 +20,12 @@ export {
 } from "@/lib/teyvat/promptVariants";
 
 export {
-  buildCandidatesPrompt,
-  parseCandidates,
+  buildFatedRevealPrompt,
+  parseFatedReveal,
+  pickFatedCharacter,
   prefilterRoster,
-  type CandidatesParseResult,
+  type FatedRevealParseResult,
+  type ParsedDirection,
 } from "@/lib/teyvat/candidates";
 
 export { CANON_ROSTER, getCanonCharacter, type CanonCharacter } from "@/lib/teyvat/canonRoster";

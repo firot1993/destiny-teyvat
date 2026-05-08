@@ -33,24 +33,26 @@ Skip docs for trivial edits and typo-only changes. Prefer updating an existing f
 
 ### Generation Flow
 
-- `app/page.tsx` walks the user through Title -> Questionnaire -> Reveal (or Candidate-pick for v2-wish) -> Scene loop -> Ending, with a Bookshelf overlay reachable from the title.
-- `hooks/useAdventure.ts` owns the runtime phases: `idle -> bookshelf | questionnaire -> revealing | candidates-generating -> reveal-shown | candidate-pick -> scene-generating -> scene-shown -> ended`. The candidates branch is taken whenever the active variant declares `capabilities.reveal.kind === "candidates"`; reveal-shown is skipped in that branch because the picked hook is the reveal.
+- `app/page.tsx` walks the user through Title -> Questionnaire -> Reveal (or Direction-pick for v2-wish) -> Scene loop -> Ending, with a Bookshelf overlay reachable from the title.
+- `hooks/useAdventure.ts` owns the runtime phases: `idle -> bookshelf | questionnaire -> revealing | directions-generating -> reveal-shown | direction-pick -> scene-generating -> scene-shown -> ended`. The directions branch is taken whenever the active variant declares `capabilities.reveal.kind === "fated-with-directions"`; the fated character is shown together with the 3 direction cards on a single screen, so `reveal-shown` is skipped in that branch.
 - Reveal generation (single-character variants) is a non-streaming JSON call with one corrective retry on malformed JSON.
-- Candidate generation (v2-wish) is a non-streaming JSON call against a pre-filtered slice of `CANON_ROSTER`; `parseCandidates` validates 3-5 entries with known ids and non-empty hooks, with the same corrective-retry pattern.
-- After a successful reveal, `useAdventure.ts` fires a best-effort `/api/imagine` call to generate a Genshin-style character portrait. For v2-wish the same `/api/imagine` route is called once per candidate at gallery render. Image generation never blocks the flow and silently no-ops on failure.
+- Fated-reveal generation (v2-wish) deterministically picks the top-scoring canon character via `pickFatedCharacter(CANON_ROSTER, answers)`, then makes a single non-streaming JSON call against `buildFatedRevealPrompt(...)`. `parseFatedReveal` validates a non-empty `why` plus exactly 3 directions with unique ids and non-empty title/hook fields, with the same corrective-retry pattern as the editorial reveal.
+- After a successful reveal, `useAdventure.ts` fires a best-effort `/api/imagine` call to generate a Genshin-style character portrait. For v2-wish the same `/api/imagine` route is called once for the fated character. Image generation never blocks the flow and silently no-ops on failure.
 - Framing is rolled per run as `protagonist` or `companion` for editorial variants. v2-wish always runs as `protagonist` with transmigration framing.
 - Scene generation is a single scene-at-a-time call using tagged sections: `<scene>`, `<choices>`, `<closing>`, and `<summary>`.
 - The scene parser tolerates a missing `</scene>` tag by treating `<choices>` as the scene terminator.
 - Pacing guidance in `lib/teyvat/prompts.ts` escalates closure pressure across scenes and hard-stops at scene 10.
+- For v2-wish, the picked direction is persisted on `AdventureState.storyDirection` and threaded into every `buildSceneWish` prompt as a story-arc anchor — the model is asked to keep that arc consistent across all scenes.
+- Pre-scene stages support back-nav with answer-hash caching: `submitQuestionnaire` saves the latest answers to `destiny-last-answers` and the latest reveal/fated reveal to `destiny-last-reveal` / `destiny-last-fated` (keyed by a stable hash of the answers). When the user goes back to the questionnaire and resubmits the same answers, the cached pick is restored without an LLM call. `startOver` clears every cache. Within the questionnaire, each step also supports per-question back navigation.
 
 ### Prompting
 
-- Prompt construction lives in `lib/teyvat/prompts.ts` (public dispatch + parsers), `lib/teyvat/promptVariants.ts` (variant registry and per-variant builders), and `lib/teyvat/candidates.ts` (the v2-wish-only candidate pre-filter, prompt builder, and parser).
+- Prompt construction lives in `lib/teyvat/prompts.ts` (public dispatch + parsers), `lib/teyvat/promptVariants.ts` (variant registry and per-variant builders), and `lib/teyvat/candidates.ts` (the v2-wish-only prefilter, fated-character picker, fated-reveal prompt builder, and parser).
 - `buildRevealPrompt(...)` + `parseReveal(...)` handle the character reveal card for single-reveal variants.
-- `buildCandidatesPrompt(...)` + `parseCandidates(...)` handle the v2-wish candidate-suggestion call. The pre-filter narrows `CANON_ROSTER` to ~6-10 entries by tag overlap, then the model picks 3-5 and writes a transmigration awakening hook for each.
+- `pickFatedCharacter(...)` + `buildFatedRevealPrompt(...)` + `parseFatedReveal(...)` handle the v2-wish fated-reveal call. The prefilter narrows `CANON_ROSTER` to ~6-10 entries by tag overlap and the picker takes the top-1 deterministically, then a single combined call returns a `why` line plus exactly 3 distinct story directions (id / title / hook). The user picks one direction; that direction becomes the awakening hook and the persistent story-arc anchor.
 - `buildScenePrompt(...)` + `parseSceneStream(...)` handle scene generation and streaming-tag parsing.
 - Both `buildRevealPrompt` and `buildScenePrompt` accept an optional trailing `variantId` and dispatch through `PROMPT_VARIANTS`. Omitting it is equivalent to `DEFAULT_PROMPT_VARIANT_ID` (`"v1"`), so existing callers and tests keep working.
-- Each registered variant declares `capabilities`: which questionnaire schema, what reveal contract (`single` vs `candidates`), framing, and scene tone. Variants with `capabilities.reveal.kind === "candidates"` go through the candidate-pick path instead of returning a single character.
+- Each registered variant declares `capabilities`: which questionnaire schema, what reveal contract (`single` vs `fated-with-directions`), framing, and scene tone. Variants with `capabilities.reveal.kind === "fated-with-directions"` go through the direction-pick path instead of returning a single character.
 - The default `v1` variant is the editorial baseline and includes the soft mapping table; `v2-tight` is a concise alternate (drops the mapping table, hardens constraints) and acts as the second arm of the A/B split. `v2-wish` is the wish-fulfillment 爽文 variant, opt-in via the picker (weight 0, never randomly assigned).
 - The single-reveal prompt enforces nation-specific naming conventions, bans element words in the `name` field, and rejects names that collide with the canonical Genshin roster via `lib/teyvat/canonNames.ts`. The reveal schema includes a `title` epithet field rendered with `「」` brackets in Chinese and em-dashes in English. v2-wish ignores all of this — its character is sourced from `CANON_ROSTER`, not generated.
 
@@ -95,8 +97,9 @@ Skip docs for trivial edits and typo-only changes. Prefer updating an existing f
 - [app/api/telemetry/route.ts](app/api/telemetry/route.ts) — optional best-effort telemetry ingress
 - [hooks/useAdventure.ts](hooks/useAdventure.ts) — reveal, portrait, scene, and library orchestration
 - [components/teyvat/TitleScreen.tsx](components/teyvat/TitleScreen.tsx) — title screen
+- [components/teyvat/BackButton.tsx](components/teyvat/BackButton.tsx) — top-left back chevron used across pre-scene stages (Esc-bound)
 - [components/teyvat/Bookshelf.tsx](components/teyvat/Bookshelf.tsx) — archived-runs overlay (stories + characters tabs)
-- [components/teyvat/CandidateGallery.tsx](components/teyvat/CandidateGallery.tsx) — v2-wish candidate-pick UI (3-5 cards with hooks and async portraits)
+- [components/teyvat/DirectionPicker.tsx](components/teyvat/DirectionPicker.tsx) — v2-wish fated-reveal + direction-pick UI (one character with portrait + "why", three direction cards)
 - [components/teyvat/Questionnaire.tsx](components/teyvat/Questionnaire.tsx) — staged questionnaire UI; takes a `QuestionnaireSchema` as a prop
 - [components/teyvat/RevealCard.tsx](components/teyvat/RevealCard.tsx) — character reveal UI with optional portrait
 - [components/teyvat/SceneView.tsx](components/teyvat/SceneView.tsx) — scene prose and choice UI
@@ -105,8 +108,8 @@ Skip docs for trivial edits and typo-only changes. Prefer updating an existing f
 - [lib/teyvat/questionnaire.ts](lib/teyvat/questionnaire.ts) — `QuestionnaireSchema` type and editorial-schema re-exports
 - [lib/teyvat/questionnaires/](lib/teyvat/questionnaires/) — per-variant questionnaire schemas (`editorialQuestionnaire`, `wishQuestionnaire`)
 - [lib/teyvat/canonRoster.ts](lib/teyvat/canonRoster.ts) — canonical Genshin character roster used by v2-wish (~25 entries with power-fantasy tags)
-- [lib/teyvat/candidates.ts](lib/teyvat/candidates.ts) — v2-wish candidate pre-filter, prompt builder, and parser
-- [lib/teyvat/prompts.ts](lib/teyvat/prompts.ts) — public reveal/scene/candidates surface; dispatches by variant id
+- [lib/teyvat/candidates.ts](lib/teyvat/candidates.ts) — v2-wish prefilter, deterministic top-1 picker (`pickFatedCharacter`), fated-reveal prompt builder, and `{ why, directions[3] }` parser
+- [lib/teyvat/prompts.ts](lib/teyvat/prompts.ts) — public reveal/scene/fated-reveal surface; dispatches by variant id
 - [lib/teyvat/promptVariants.ts](lib/teyvat/promptVariants.ts) — prompt variant registry (v1 baseline, v2-tight alternate, v2-wish wish-fulfillment) + `variantFamily(...)` helper
 - [lib/teyvat/promptSwitch.ts](lib/teyvat/promptSwitch.ts) — variant resolver: URL → localStorage → weighted-random sticky pick
 - [lib/teyvat/character.ts](lib/teyvat/character.ts) — revealed character types and validation

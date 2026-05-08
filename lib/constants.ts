@@ -42,6 +42,9 @@ export const GEMINI_SEARCH_GROUNDING_DEFAULT = false;
 
 export const ADVENTURE_STORAGE_KEY = "destiny-adventure-state";
 export const LIBRARY_STORAGE_KEY = "destiny-adventure-library";
+export const LAST_ANSWERS_STORAGE_KEY = "destiny-last-answers";
+export const LAST_REVEAL_STORAGE_KEY = "destiny-last-reveal";
+export const LAST_FATED_STORAGE_KEY = "destiny-last-fated";
 export const MAX_SCENES = 10;
 export const REVEAL_MAX_TOKENS = 1500;
 export const SCENE_MAX_TOKENS = 1200;

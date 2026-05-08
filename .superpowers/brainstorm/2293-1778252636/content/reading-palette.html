@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Destiny — Reading palette + long-scene behavior</title>
+<style>
+  :root {
+    --gold: #b88a40;
+    --gold-bright: #d4a861;
+    --anemo: #74c2a4;
+    --anemo-deep: #3a8060;
+    --night: #14213d;
+    --night-deep: #0a1228;
+    --ink: #1a1612;
+    --ink-soft: #4a4238;
+    --ink-faint: #8a7e6c;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; font-family: Georgia, "Times New Roman", serif; color: var(--ink); }
+
+  .doc {
+    height: 100vh;
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+  }
+  .doc::-webkit-scrollbar { width: 4px; }
+  .doc::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 2px; }
+  .doc::-webkit-scrollbar-track { background: transparent; }
+
+  .stage {
+    min-height: 100vh;
+    scroll-snap-align: start;
+    scroll-snap-stop: normal;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 60px 28px 80px;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  /* ───── Reading palette (questions, scenes) ───── */
+  .stage.reading {
+    background: linear-gradient(180deg, #ede4cf 0%, #ddd2b6 100%);
+  }
+  .stage.reading::before {
+    content: ""; position: absolute;
+    top: 0; right: 0; width: 60%; height: 50%;
+    background: radial-gradient(ellipse at top right, rgba(116,194,164,0.14), transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+  .stage.reading::after {
+    content: ""; position: absolute;
+    bottom: 0; left: 0; width: 40%; height: 35%;
+    background: radial-gradient(ellipse at bottom left, rgba(116,194,164,0.08), transparent 65%);
+    pointer-events: none; z-index: 0;
+  }
+  .reading .corner {
+    position: absolute; color: var(--gold); font-size: 16px; z-index: 2;
+  }
+  .reading .corner.tl { top: 22px; left: 26px; }
+  .reading .corner.br { bottom: 22px; right: 26px; }
+  .reading .vision-mark {
+    position: absolute; top: 24px; right: 28px; z-index: 2;
+    font-size: 10px; letter-spacing: 0.25em; color: var(--anemo-deep);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .reading .vision-dot {
+    width: 7px; height: 7px; background: var(--anemo); border-radius: 50%;
+    box-shadow: 0 0 6px rgba(116,194,164,0.8);
+  }
+
+  .stage-content { position: relative; z-index: 3; max-width: 540px; width: 100%; }
+  .eyebrow {
+    font-size: 10px; letter-spacing: 0.30em; text-transform: uppercase;
+    color: var(--gold); margin: 0 0 28px;
+  }
+
+  /* Question stage */
+  .reading.question .stage-content { max-width: 460px; }
+  .reading.question .display {
+    font-family: Georgia, serif; font-weight: 300; font-size: 36px;
+    line-height: 1.1; color: var(--ink); margin: 0 0 36px;
+    letter-spacing: -0.005em;
+  }
+  .reading.question .opts { display: grid; gap: 14px; max-width: 400px; margin: 0 auto; }
+  .reading.question .opt {
+    padding: 16px 0; background: transparent; border: none;
+    border-bottom: 1px solid rgba(31,27,21,0.20);
+    font-family: Georgia, serif; font-size: 16px; color: var(--ink);
+    cursor: pointer; transition: color 200ms, letter-spacing 200ms;
+    text-align: center;
+  }
+  .reading.question .opt:hover { letter-spacing: 0.02em; color: #000; }
+  .reading.question .opt.selected {
+    color: var(--anemo-deep); font-style: italic;
+    border-bottom: 1px solid var(--anemo);
+  }
+
+  /* Scene stage */
+  .reading.scene { padding: 60px 28px 100px; }
+  .reading.scene .stage-content { max-width: 580px; text-align: left; }
+  .reading.scene .eyebrow { text-align: center; margin-bottom: 36px; }
+  .reading.scene .prose {
+    font-size: 17px; line-height: 1.78; color: var(--ink); margin-bottom: 32px;
+  }
+  .reading.scene .prose p { margin: 0 0 1.1em; }
+  .reading.scene .prose .first-letter::first-letter {
+    font-size: 46px; line-height: 0.9; float: left;
+    color: var(--anemo-deep); padding: 4px 6px 0 0; font-weight: 400;
+  }
+  .reading.scene .choices { display: grid; gap: 6px; margin-top: 24px; padding-top: 14px; border-top: 1px solid rgba(31,27,21,0.12); }
+  .reading.scene .choice {
+    padding: 13px 0; background: transparent; border: none;
+    border-bottom: 1px solid rgba(31,27,21,0.15);
+    font-family: Georgia, serif; font-size: 15px; color: var(--ink-soft);
+    text-align: left; cursor: pointer; transition: color 200ms;
+  }
+  .reading.scene .choice:hover { color: var(--ink); }
+  .reading.scene .choice:last-child { border-bottom: none; }
+
+  .scroll-hint {
+    position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+    color: var(--gold); font-size: 18px; z-index: 3;
+    animation: bob 2.4s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translate(-50%, 0); }
+    50% { transform: translate(-50%, 5px); }
+  }
+  .scroll-hint-up {
+    bottom: auto; top: 22px; opacity: 0.5; font-size: 13px;
+    animation: bob-up 2.4s ease-in-out infinite;
+  }
+  @keyframes bob-up {
+    0%, 100% { transform: translate(-50%, 0); }
+    50% { transform: translate(-50%, -5px); }
+  }
+
+  /* Stage header — when stage is taller than viewport, the prose content sits at top, not centered */
+  .stage.reading.scene.tall {
+    justify-content: flex-start;
+    padding-top: 80px;
+  }
+  .scene .read-hint {
+    position: sticky; top: 8px; left: 0; right: 0;
+    text-align: center; font-size: 10px; letter-spacing: 0.20em;
+    color: var(--ink-faint); pointer-events: none; z-index: 5;
+    margin-top: -50px; margin-bottom: 30px;
+  }
+
+  /* ───── Wish (Reveal) — kept the same ───── */
+  .stage.wish {
+    background: radial-gradient(ellipse at center, #2a3858 0%, #14213d 50%, #0a1228 100%);
+  }
+  .stage.wish::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background:
+      conic-gradient(
+        from 90deg at 50% 60%,
+        transparent 0deg, rgba(228,193,120,0.18) 25deg,
+        transparent 50deg, rgba(228,193,120,0.10) 80deg,
+        transparent 110deg, rgba(228,193,120,0.20) 145deg,
+        transparent 175deg, rgba(228,193,120,0.08) 220deg,
+        transparent 250deg, rgba(228,193,120,0.16) 290deg,
+        transparent 330deg, rgba(228,193,120,0.18) 360deg
+      );
+  }
+  .stage.wish::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center 60%, rgba(228,193,120,0.32) 0%, transparent 35%);
+  }
+  .star {
+    position: absolute; width: 2px; height: 2px;
+    background: rgba(255,250,235,0.9); border-radius: 50%;
+    box-shadow: 0 0 4px rgba(255,250,235,0.6); pointer-events: none; z-index: 1;
+    animation: twinkle 4s ease-in-out infinite;
+  }
+  @keyframes twinkle { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+  .silhouette {
+    position: absolute; bottom: 26%; left: 50%; transform: translateX(-50%);
+    width: 130px; height: 220px;
+    background: linear-gradient(180deg, var(--anemo) 0%, var(--anemo-deep) 80%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse at top, black 30%, transparent 70%);
+            mask-image: radial-gradient(ellipse at top, black 30%, transparent 70%);
+    border-radius: 50% 50% 30% 30% / 60% 60% 40% 40%;
+    box-shadow: 0 0 60px rgba(116,194,164,0.6); pointer-events: none; z-index: 2;
+  }
+  .filigree { position: absolute; width: 64px; height: 64px; color: var(--gold-bright); pointer-events: none; z-index: 3; }
+  .filigree.tl { top: 18px; left: 22px; }
+  .filigree.tr { top: 18px; right: 22px; transform: scaleX(-1); }
+  .vision-badge {
+    margin: 0 auto 22px; width: 56px; height: 56px; border-radius: 50%;
+    background: radial-gradient(circle, var(--anemo) 0%, var(--anemo-deep) 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 26px;
+    box-shadow: 0 0 30px rgba(116,194,164,0.8), 0 0 0 1px var(--gold-bright);
+  }
+  .wish .stage-content { z-index: 4; margin-top: -130px; }
+  .wish .eyebrow { color: var(--gold-bright); letter-spacing: 0.5em; }
+  .wish .name {
+    font-family: Georgia, serif; font-size: 64px; font-weight: 300;
+    color: #f5e8c8; line-height: 1; margin: 0; letter-spacing: 0.04em;
+    text-shadow: 0 0 20px rgba(228,193,120,0.4);
+  }
+  .wish .epithet {
+    font-style: italic; font-size: 14px; color: var(--gold-bright);
+    margin: 12px 0 0; letter-spacing: 0.06em;
+  }
+  .wish .nation-row {
+    margin-top: 18px; font-size: 11px; letter-spacing: 0.3em;
+    text-transform: uppercase; color: rgba(245,232,200,0.7);
+  }
+  .wish .nation-row .sep { color: var(--gold-bright); margin: 0 10px; }
+  .wish .advance {
+    position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%);
+    z-index: 4; color: var(--gold-bright); font-size: 12px;
+    letter-spacing: 0.25em; text-transform: uppercase; text-align: center;
+  }
+
+  .hint-banner {
+    position: fixed; bottom: 14px; right: 14px;
+    background: rgba(20, 30, 45, 0.85); color: #f5e8c8;
+    padding: 8px 14px; font-size: 11px; letter-spacing: 0.10em;
+    border-radius: 2px; z-index: 100;
+    font-family: Georgia, serif; pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div class="hint-banner">Scroll ↓ to feel the new reading palette + long-scene behavior</div>
+
+<div class="doc">
+
+  <!-- Question stage — new reading palette -->
+  <section class="stage reading question">
+    <span class="corner tl">❦</span><span class="corner br">❦</span>
+    <span class="vision-mark"><span class="vision-dot"></span> Anemo</span>
+
+    <div class="stage-content">
+      <p class="eyebrow">Mood · ii of vii</p>
+      <h2 class="display">What calls to you across the wind?</h2>
+      <div class="opts">
+        <div class="opt">A bell tolling somewhere unseen</div>
+        <div class="opt selected">A name you don't yet know</div>
+        <div class="opt">The hush before a storm</div>
+        <div class="opt">Nothing — only the wind</div>
+      </div>
+    </div>
+    <div class="scroll-hint">⌄</div>
+  </section>
+
+  <!-- Scene I — normal length — fits 100vh -->
+  <section class="stage reading scene">
+    <span class="corner tl">❦</span><span class="corner br">❦</span>
+    <span class="vision-mark"><span class="vision-dot"></span> Anemo</span>
+    <div class="scroll-hint scroll-hint-up">⌃</div>
+
+    <div class="stage-content">
+      <p class="eyebrow">Scene I</p>
+      <div class="prose">
+        <p class="first-letter">The bell at Mondstadt's cathedral struck six as Lirien crossed the square. She had not meant to come here. The wind had brought her — or someone in it had — and now the cobbles still held the warmth of an afternoon she'd missed.</p>
+        <p>A figure waited at the cathedral steps. Cloaked, unmoving. Her Vision pulsed once at her hip, three quick beats, like a heart not her own.</p>
+      </div>
+      <div class="choices">
+        <div class="choice">— Approach the figure, slowly</div>
+        <div class="choice">— Wait for them to turn first</div>
+        <div class="choice">— Slip past, into the cathedral</div>
+      </div>
+    </div>
+    <div class="scroll-hint">⌄</div>
+  </section>
+
+  <!-- Scene II — LONG, taller than viewport, demonstrates internal scroll -->
+  <section class="stage reading scene tall">
+    <span class="corner tl">❦</span><span class="corner br">❦</span>
+    <span class="vision-mark"><span class="vision-dot"></span> Anemo</span>
+    <div class="scroll-hint scroll-hint-up">⌃</div>
+
+    <div class="stage-content">
+      <p class="eyebrow">Scene II — long version</p>
+      <div class="prose">
+        <p class="first-letter">The figure spoke first, before Lirien could. The voice was older than the face under the hood, older than Mondstadt's bells, and it knew her — not as a stranger knows a name, but as the wind knows a path it has walked many times.</p>
+        <p>"You're late, wind-walker. The lake won't wait twice."</p>
+        <p>Lirien's Vision pulsed again, harder this time, three beats and a fourth. The fourth one stayed. She had read about Visions that did this — old Visions, ones that had belonged to someone before, and remembered them. She had never wanted to wear one of those.</p>
+        <p>The figure turned, just enough that moonlight caught a strand of pale hair, and a cheekbone that looked far too young for the voice it wore. They lifted one hand, palm up, in invitation. The air above the palm shimmered, the way it did before a wind opened a door no one had built.</p>
+        <p>"You can come, or you can stay. The lake is patient about most things, but it has stopped being patient about you." A pause, gentler. "I have been waiting a long time for someone to say my name back to me. You're the closest anyone has come."</p>
+        <p>Behind Lirien, the cathedral bells began to strike seven, and would not stop until they had finished. She had perhaps the length of seven bells to decide whether the wind that brought her here had been her own.</p>
+      </div>
+      <div class="choices">
+        <div class="choice">— Ask whose voice that really is</div>
+        <div class="choice">— Follow them toward the lake without a word</div>
+        <div class="choice">— Refuse — turn back to the city</div>
+      </div>
+    </div>
+    <div class="scroll-hint">⌄</div>
+  </section>
+
+  <!-- Reveal — Wish, for rhythm comparison -->
+  <section class="stage wish">
+    <span class="star" style="top:8%; left:15%; animation-delay:0s;"></span>
+    <span class="star" style="top:14%; left:78%; animation-delay:1s;"></span>
+    <span class="star" style="top:22%; left:42%; animation-delay:2s;"></span>
+    <span class="star" style="top:30%; left:8%; animation-delay:0.5s;"></span>
+    <span class="star" style="top:38%; left:88%; animation-delay:1.5s;"></span>
+    <span class="star" style="top:18%; left:60%; animation-delay:2.5s;"></span>
+    <span class="star" style="top:46%; left:22%; animation-delay:3s;"></span>
+    <span class="star" style="top:10%; left:35%; animation-delay:1.2s;"></span>
+
+    <div class="silhouette"></div>
+
+    <svg class="filigree tl" viewBox="0 0 64 64"><path d="M2,2 L62,2 M2,2 L2,62 M2,2 Q22,12 32,32 M2,2 Q12,22 32,32" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.9"/></svg>
+    <svg class="filigree tr" viewBox="0 0 64 64"><path d="M2,2 L62,2 M2,2 L2,62 M2,2 Q22,12 32,32 M2,2 Q12,22 32,32" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.9"/></svg>
+
+    <div class="stage-content">
+      <div class="vision-badge">≋</div>
+      <p class="eyebrow">What you sought has answered</p>
+      <h1 class="name">Lirien</h1>
+      <p class="epithet">— of the seven winds —</p>
+      <p class="nation-row">Mondstadt <span class="sep">·</span> Anemo <span class="sep">·</span> Catalyst</p>
+    </div>
+
+    <div class="advance">Walk into her world<br/><span style="font-size:18px">⌄</span></div>
+  </section>
+
+</div>
+</body>
+</html>

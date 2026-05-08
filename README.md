@@ -6,20 +6,21 @@ Destiny is now a Teyvat adventure generator built with Next.js. A short seven-qu
 
 1. Title screen, with a Bookshelf entry to revisit prior runs
 2. Seven-question questionnaire — editorial (Mood / Desire / Conflict) for v1 and v2-tight, or wish-fulfillment (Origin / Power / Desire) for v2-wish
-3. Either a character reveal card (single-reveal variants) **or** a candidate gallery of 3-5 canonical Genshin characters with transmigration hooks (v2-wish), depending on the active variant
+3. Either a character reveal card (single-reveal variants) **or** a fated-character reveal with three story directions to pick from (v2-wish), depending on the active variant
 4. Scene loop with streamed prose, three choices, and an always-available “stop here” exit
 5. Ending screen with replay and new-run actions; finished runs are archived into the Bookshelf, where they can be filtered by variant family
 
 ## Runtime Flow
 
-- `app/page.tsx` renders the full client flow: title -> questionnaire -> reveal *or* candidate-pick -> scene loop -> ending, plus a Bookshelf overlay over the title.
-- `hooks/useAdventure.ts` owns the state machine: `idle -> bookshelf | questionnaire -> revealing | candidates-generating -> reveal-shown | candidate-pick -> scene-generating -> scene-shown -> ended`.
+- `app/page.tsx` renders the full client flow: title -> questionnaire -> reveal *or* fated-direction-pick -> scene loop -> ending, plus a Bookshelf overlay over the title.
+- `hooks/useAdventure.ts` owns the state machine: `idle -> bookshelf | questionnaire -> revealing | directions-generating -> reveal-shown | direction-pick -> scene-generating -> scene-shown -> ended`.
 - For single-reveal variants (v1, v2-tight), reveal generation is one non-streaming JSON call built by `buildRevealPrompt(...)` and parsed by `parseReveal(...)`.
-- For the v2-wish variant, the questionnaire feeds into `buildCandidatesPrompt(...)` against a code-side canonical roster; `parseCandidates(...)` returns 3-5 canon characters with awakening hooks, the user picks one, and play begins as a transmigration adventure into that canonical role.
-- After a reveal, the hook fires a best-effort `/api/imagine` call (xAI Imagine) to render a Genshin-style character portrait that's shown on the reveal card. v2-wish fires the same call once per candidate. Image generation never blocks the flow.
+- For the v2-wish variant, `pickFatedCharacter(...)` deterministically picks the single highest-scoring canon character from `CANON_ROSTER` for the reader's answers, then `buildFatedRevealPrompt(...)` makes one non-streaming JSON call that returns a "why this character" line plus three distinct story directions (revenge / ascent / romance / etc.). The user picks one direction; that direction's title and hook are persisted on the adventure and threaded into every scene prompt as a story-arc anchor.
+- After a reveal, the hook fires a best-effort `/api/imagine` call (xAI Imagine) to render a Genshin-style character portrait that's shown on the reveal card. v2-wish fires the same call once for the fated character. Image generation never blocks the flow.
 - Scene generation is one streamed-or-fallback call per scene built by `buildScenePrompt(...)` and parsed by `parseSceneStream(...)`.
 - The scene prompt includes a pacing matrix that pushes toward closure by scene 5-7, with a hard cap at scene 10.
 - A prompt switch system (`lib/teyvat/promptVariants.ts` + `lib/teyvat/promptSwitch.ts`) drives A/B testing and frontend debugging: each call dispatches through a named variant — `v1` (editorial baseline), `v2-tight` (concise alternate), `v2-wish` (wish-fulfillment / 爽文, opt-in only) — picked by `?promptVariant=<id>` → `localStorage` → weighted-random sticky assignment.
+- Pre-scene stages support back-nav with answer-hash caching: a `BackButton` (Esc-bound) appears in the top-left of questionnaire / reveal / direction-pick. Going back to the questionnaire prefills the user's last answers; resubmitting the same answers restores the cached reveal/fated pick without an LLM call. Caches live in `destiny-last-{answers,reveal,fated}` and are wiped by `startOver`.
 - Provider retries, fallback providers, daily quota headers, per-IP throttling, and optional telemetry remain in the shared runtime.
 
 ## Architecture
@@ -27,10 +28,11 @@ Destiny is now a Teyvat adventure generator built with Next.js. A short seven-qu
 ```text
 app/page.tsx
   ├─ components/teyvat/TitleScreen.tsx
+  ├─ components/teyvat/BackButton.tsx
   ├─ components/teyvat/Bookshelf.tsx
   ├─ components/teyvat/Questionnaire.tsx
   ├─ components/teyvat/RevealCard.tsx
-  ├─ components/teyvat/CandidateGallery.tsx
+  ├─ components/teyvat/DirectionPicker.tsx
   ├─ components/teyvat/SceneView.tsx
   ├─ components/teyvat/AdventureLog.tsx
   └─ components/teyvat/Ending.tsx
@@ -119,8 +121,8 @@ npm run db:stop
 - `lib/teyvat/character.ts` — reveal types and validation
 - `lib/teyvat/scenes.ts` — scene/adventure types
 - `lib/teyvat/storage.ts` — localStorage persistence for in-progress adventures and the Bookshelf library archive
-- `lib/teyvat/canonRoster.ts` — canonical Genshin character roster (~25 entries) used by v2-wish to source candidates
-- `lib/teyvat/candidates.ts` — v2-wish candidate pre-filter, prompt builder, and response parser
+- `lib/teyvat/canonRoster.ts` — canonical Genshin character roster (~25 entries) used by v2-wish as the fated-character pool
+- `lib/teyvat/candidates.ts` — v2-wish prefilter, deterministic top-1 picker (`pickFatedCharacter`), fated-reveal prompt builder, and response parser (returns `{ why, directions[3] }`)
 - `lib/teyvat/elements.ts` — Vision/nation/weapon enums and element palettes
 - `lib/teyvat/theme.ts` — parchment theme tokens and per-Vision tinting
 - `components/teyvat/*` — title, questionnaire, reveal, scene, log, and ending components

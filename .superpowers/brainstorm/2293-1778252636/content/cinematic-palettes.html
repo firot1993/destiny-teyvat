@@ -1,0 +1,265 @@
+<h2>Cinematic — but the palette has a point of view</h2>
+<p class="subtitle">Same Q2 layout, four less-default palettes. Click the one that feels like it was chosen, not generated.</p>
+
+<style>
+  .pal-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+    margin-top: 14px;
+  }
+  @media (min-width: 1100px) {
+    .pal-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  .pal-card { cursor: pointer; transition: transform 200ms ease; }
+  .pal-card:hover { transform: translateY(-3px); }
+
+  .pal-name {
+    font-size: 11px;
+    letter-spacing: 0.20em;
+    text-transform: uppercase;
+    color: #6b6359;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .pal-blurb { font-size: 12px; color: #4a4238; line-height: 1.6; margin: 8px 0 0; }
+  .pal-swatches { display: flex; gap: 6px; margin-top: 8px; }
+  .swatch { width: 22px; height: 22px; border-radius: 2px; border: 1px solid rgba(0,0,0,0.1); }
+
+  .vp {
+    height: 460px;
+    border-radius: 4px;
+    border: 1px solid rgba(31,27,21,0.10);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 36px 28px;
+    text-align: center;
+  }
+  .vp .eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.30em;
+    text-transform: uppercase;
+    margin-bottom: 26px;
+  }
+  .vp .question {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 38px;
+    font-weight: 300;
+    line-height: 1.05;
+    margin: 0 0 36px;
+    max-width: 460px;
+    letter-spacing: -0.005em;
+  }
+  .vp .opts { display: grid; gap: 12px; max-width: 440px; width: 100%; }
+  .vp .opt {
+    padding: 17px 0;
+    border: none;
+    background: transparent;
+    font-family: Georgia, serif;
+    font-size: 16px;
+    text-align: center;
+  }
+  .vp .scroll-hint {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 18px;
+    animation: bob 2.4s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translate(-50%, 0); }
+    50% { transform: translate(-50%, 5px); }
+  }
+
+  /* ── 1 · Midnight Cinema ── */
+  .vp.midnight {
+    background:
+      radial-gradient(ellipse at center, #1f1a14 0%, #0c0a07 90%);
+  }
+  .midnight::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 110px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.55), transparent);
+    pointer-events: none;
+  }
+  .midnight::after {
+    content: "";
+    position: absolute; bottom: 0; left: 0; right: 0; height: 130px;
+    background: linear-gradient(0deg, rgba(0,0,0,0.6), transparent);
+    pointer-events: none;
+  }
+  .midnight .eyebrow { color: rgba(232,223,200,0.55); }
+  .midnight .question { color: #ede4cd; }
+  .midnight .opt { color: rgba(232,223,200,0.62); border-bottom: 1px solid rgba(232,223,200,0.16); }
+  .midnight .opt.selected { color: #ede4cd; font-style: italic; border-bottom-color: #c8a86b; }
+  .midnight .scroll-hint { color: rgba(232,223,200,0.55); }
+
+  /* ── 2 · Cold Stone ── */
+  .vp.stone {
+    background: linear-gradient(180deg, #d8dde2 0%, #b9c0c8 100%);
+  }
+  .stone::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 90px;
+    background: linear-gradient(180deg, rgba(20,30,45,0.10), transparent);
+    pointer-events: none;
+  }
+  .stone::after {
+    content: "";
+    position: absolute; bottom: 0; left: 0; right: 0; height: 110px;
+    background: linear-gradient(0deg, rgba(20,30,45,0.14), transparent);
+    pointer-events: none;
+  }
+  .stone .eyebrow { color: #5a6878; }
+  .stone .question { color: #161e2a; }
+  .stone .opt { color: #3a4554; border-bottom: 1px solid rgba(20,30,45,0.22); }
+  .stone .opt.selected { color: #161e2a; font-style: italic; border-bottom-color: #161e2a; }
+  .stone .scroll-hint { color: #5a6878; }
+
+  /* ── 3 · Darkroom Sepia ── */
+  .vp.sepia {
+    background:
+      radial-gradient(ellipse at top, #c89968 0%, #8a5630 60%, #4a2814 100%);
+  }
+  .sepia::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 120px;
+    background: linear-gradient(180deg, rgba(20,8,2,0.4), transparent);
+    pointer-events: none;
+  }
+  .sepia::after {
+    content: "";
+    position: absolute; bottom: 0; left: 0; right: 0; height: 140px;
+    background: linear-gradient(0deg, rgba(20,8,2,0.5), transparent);
+    pointer-events: none;
+  }
+  .sepia .eyebrow { color: rgba(40,20,8,0.7); }
+  .sepia .question { color: #1a0a02; font-weight: 400; }
+  .sepia .opt { color: #2e1607; border-bottom: 1px solid rgba(20,8,2,0.32); }
+  .sepia .opt.selected { color: #1a0a02; font-style: italic; border-bottom-color: #1a0a02; }
+  .sepia .scroll-hint { color: rgba(20,8,2,0.6); }
+
+  /* ── 4 · Bone + Vermilion ── */
+  .vp.bone {
+    background: linear-gradient(180deg, #ece6da 0%, #d8d2c4 100%);
+  }
+  .bone::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 90px;
+    background: linear-gradient(180deg, rgba(31,27,21,0.10), transparent);
+    pointer-events: none;
+  }
+  .bone::after {
+    content: "";
+    position: absolute; bottom: 0; left: 0; right: 0; height: 110px;
+    background: linear-gradient(0deg, rgba(31,27,21,0.14), transparent);
+    pointer-events: none;
+  }
+  .bone .eyebrow { color: #a02418; letter-spacing: 0.30em; }
+  .bone .question { color: #0e0c08; }
+  .bone .opt { color: #3a342b; border-bottom: 1px solid rgba(31,27,21,0.22); }
+  .bone .opt.selected { color: #0e0c08; font-style: italic; border-bottom-color: #a02418; }
+  .bone .scroll-hint { color: #a02418; }
+</style>
+
+<div class="pal-grid">
+  <!-- 1 · Midnight Cinema -->
+  <div class="card pal-card" data-choice="midnight" onclick="toggleSelect(this)">
+    <p class="pal-name">1 · Midnight Cinema</p>
+    <div class="vp midnight">
+      <p class="eyebrow">Mood · ii of vii</p>
+      <h3 class="question">What calls to you across the wind?</h3>
+      <div class="opts">
+        <div class="opt">A bell tolling somewhere unseen</div>
+        <div class="opt selected">A name you don't yet know</div>
+        <div class="opt">The hush before a storm</div>
+        <div class="opt">Nothing — only the wind itself</div>
+      </div>
+      <div class="scroll-hint">⌄</div>
+    </div>
+    <p class="pal-blurb">Inverse. Warm-charcoal ground, cream type, a faded gold underline on the chosen line. Feels like reading by lamplight in a study at midnight. Strongest break from the AI-template look — and pairs naturally with portrait imagery later (dark grounds make character art glow).</p>
+    <div class="pal-swatches">
+      <div class="swatch" style="background:#0c0a07"></div>
+      <div class="swatch" style="background:#1f1a14"></div>
+      <div class="swatch" style="background:#ede4cd"></div>
+      <div class="swatch" style="background:#c8a86b"></div>
+    </div>
+  </div>
+
+  <!-- 2 · Cold Stone -->
+  <div class="card pal-card" data-choice="stone" onclick="toggleSelect(this)">
+    <p class="pal-name">2 · Cold Stone</p>
+    <div class="vp stone">
+      <p class="eyebrow">Mood · ii of vii</p>
+      <h3 class="question">What calls to you across the wind?</h3>
+      <div class="opts">
+        <div class="opt">A bell tolling somewhere unseen</div>
+        <div class="opt selected">A name you don't yet know</div>
+        <div class="opt">The hush before a storm</div>
+        <div class="opt">Nothing — only the wind itself</div>
+      </div>
+      <div class="scroll-hint">⌄</div>
+    </div>
+    <p class="pal-blurb">Cool grey paper, navy ink. Reads as "blueprint" or "moonlit page." Architectural restraint. Big departure from the warm-cream default; risks feeling sterile if not warmed by per-character accent later (Pyro = single ember tone, Anemo = pale teal, etc.).</p>
+    <div class="pal-swatches">
+      <div class="swatch" style="background:#b9c0c8"></div>
+      <div class="swatch" style="background:#d8dde2"></div>
+      <div class="swatch" style="background:#161e2a"></div>
+      <div class="swatch" style="background:#5a6878"></div>
+    </div>
+  </div>
+
+  <!-- 3 · Darkroom Sepia -->
+  <div class="card pal-card" data-choice="sepia" onclick="toggleSelect(this)">
+    <p class="pal-name">3 · Darkroom Sepia</p>
+    <div class="vp sepia">
+      <p class="eyebrow">Mood · ii of vii</p>
+      <h3 class="question">What calls to you across the wind?</h3>
+      <div class="opts">
+        <div class="opt">A bell tolling somewhere unseen</div>
+        <div class="opt selected">A name you don't yet know</div>
+        <div class="opt">The hush before a storm</div>
+        <div class="opt">Nothing — only the wind itself</div>
+      </div>
+      <div class="scroll-hint">⌄</div>
+    </div>
+    <p class="pal-blurb">Saturated walnut-amber ground, near-black warm ink. Like a developed darkroom print, not a beige page. Strongest "found document" feel. Heaviest on the eyes for long reading; might want to lighten body prose for the scene loop.</p>
+    <div class="pal-swatches">
+      <div class="swatch" style="background:#4a2814"></div>
+      <div class="swatch" style="background:#8a5630"></div>
+      <div class="swatch" style="background:#c89968"></div>
+      <div class="swatch" style="background:#1a0a02"></div>
+    </div>
+  </div>
+
+  <!-- 4 · Bone + Vermilion -->
+  <div class="card pal-card" data-choice="bone" onclick="toggleSelect(this)">
+    <p class="pal-name">4 · Bone + Vermilion</p>
+    <div class="vp bone">
+      <p class="eyebrow">Mood · ii of vii</p>
+      <h3 class="question">What calls to you across the wind?</h3>
+      <div class="opts">
+        <div class="opt">A bell tolling somewhere unseen</div>
+        <div class="opt selected">A name you don't yet know</div>
+        <div class="opt">The hush before a storm</div>
+        <div class="opt">Nothing — only the wind itself</div>
+      </div>
+      <div class="scroll-hint">⌄</div>
+    </div>
+    <p class="pal-blurb">Keep parchment-adjacent (cooler bone, less yellow), but earn it with a single saturated accent — deep vermilion ink, the kind from a wax seal. Used only on the eyebrow, the selected underline, and the scroll hint. The cream becomes intentional <em>because</em> of what punctuates it.</p>
+    <div class="pal-swatches">
+      <div class="swatch" style="background:#d8d2c4"></div>
+      <div class="swatch" style="background:#ece6da"></div>
+      <div class="swatch" style="background:#0e0c08"></div>
+      <div class="swatch" style="background:#a02418"></div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 24px; font-size: 13px;">Per-character/per-Vision tinting still works on top of any of these — Pyro might warm the midnight ground toward ember, Cryo cool the bone toward pale ice, etc. The base palette sets the voice; the Vision is the seasoning.</p>

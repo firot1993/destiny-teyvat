@@ -5,6 +5,7 @@ import type { Vision } from "@/lib/teyvat/elements";
 
 const PREFILTER_MIN = 6;
 const PREFILTER_MAX = 10;
+const DIRECTION_COUNT = 3;
 
 const AFFINITY_TO_VISION: Record<string, Vision | undefined> = {
   electro: "Electro",
@@ -46,6 +47,19 @@ export function prefilterRoster(
   return scored.slice(0, PREFILTER_MIN).map((entry) => entry.c);
 }
 
+/**
+ * Pick the single highest-scoring canon character for these answers.
+ * Deterministic for fixed answers + roster order; falls back to the first
+ * roster entry if the roster is empty (which should never happen).
+ */
+export function pickFatedCharacter(
+  roster: CanonCharacter[],
+  answers: TeyvatAnswers
+): CanonCharacter {
+  const top = prefilterRoster(roster, answers);
+  return top[0] ?? roster[0];
+}
+
 const LANG_NAMES: Record<Language, string> = {
   en: "English",
   zh: "Chinese (简体中文)",
@@ -57,50 +71,57 @@ function answersBlock(answers: TeyvatAnswers): string {
     .join("\n");
 }
 
-function rosterBlock(roster: CanonCharacter[]): string {
-  return roster
-    .map(
-      (c) =>
-        `- id: ${c.id} | ${c.nameEn} (${c.nameZh}) — ${c.vision} ${c.weapon} from ${c.nation} | tags: ${c.archetypeTags.join(", ")}`
-    )
-    .join("\n");
-}
-
-export function buildCandidatesPrompt(
+export function buildFatedRevealPrompt(
   answers: TeyvatAnswers,
-  prefilteredRoster: CanonCharacter[],
+  character: CanonCharacter,
   language: Language
 ): string {
   const outputLanguage = LANG_NAMES[language] ?? LANG_NAMES.en;
   return `You are casting a wish-fulfillment (爽文) transmigration adventure set in Genshin Impact / Teyvat.
 
+The reader's awakening is fixed — they wake up as this canonical Genshin character with memories and powers intact:
+- id: ${character.id}
+- name: ${character.nameEn} (${character.nameZh})
+- vision: ${character.vision}
+- nation: ${character.nation}
+- weapon: ${character.weapon}
+- archetype tags: ${character.archetypeTags.join(", ")}
+
 The reader gave these answers (treat as emotional signal, do not echo verbatim):
 ${answersBlock(answers)}
 
-Pick 3 to 5 of the canonical Genshin characters below whose archetypes most resonate with the reader's answers. Prefer diversity across vision/nation when scoring is close.
+Write two things in ${outputLanguage}:
 
-Available characters (you must use one of these exact ids):
-${rosterBlock(prefilteredRoster)}
+1. "why" — 2 to 3 sentences in second-person, mythic destiny voice. Name the resonance between the reader's answers and this character's silhouette: what about who they already are made this awakening inevitable. Do not mention questionnaires, prompts, scoring, or meta process. Do not narrate the character's bio. Do not address the character — address the reader.
 
-For each picked character, write a transmigration "awakening hook" — 2 to 3 sentences in ${outputLanguage}, in second person, in 爽文 tone. The hook describes the moment the modern reader wakes up *as* this canonical character with their memories and powers intact. Lean into the power-fantasy: dominance shown not told, the world bending around the protagonist, the inheritance arriving fully formed.
+2. "directions" — exactly ${DIRECTION_COUNT} distinct opening story directions for this awakening. Each direction is a different story this run could become. They must feel like genuinely different arcs (revenge vs ascent vs romance vs mystery vs reversal vs exile, etc.) — not flavors of the same plot. Each direction has:
+   - id: a short lowercase slug (one word, e.g. "revenge", "ascent", "romance", "mystery", "reversal", "exile", "vengeance", "throne", "rescue", "hunt")
+   - title: a 4 to 8 word evocative title in ${outputLanguage}. In Chinese, wrap the title in 「」 brackets. In English, use plain text — no brackets.
+   - hook: 2 to 3 sentences in second-person, 爽文 tone, setting up the opening situation of that arc. Lean into power-fantasy: dominance shown not told, the world bending toward the protagonist, the inheritance arriving fully formed. Do not mention prompts or meta process.
 
-Constraints:
-- Hooks should feel inevitable, not explained.
-- Do not narrate canonical bio. The reader knows who this character is.
-- Do not mention questionnaires, prompts, or meta process.
-- Output raw JSON only. No prose before or after. No code fences.
+Direction ids must be unique within this output.
+
+Output raw JSON only. No prose before or after. No code fences.
 
 Schema:
 {
-  "candidates": [
-    { "id": "raiden-shogun", "hook": "..." },
-    { "id": "zhongli", "hook": "..." }
+  "why": "...",
+  "directions": [
+    { "id": "revenge", "title": "...", "hook": "..." },
+    { "id": "ascent",  "title": "...", "hook": "..." },
+    { "id": "romance", "title": "...", "hook": "..." }
   ]
 }`;
 }
 
-export type CandidatesParseResult =
-  | { ok: true; candidates: { id: string; hook: string }[] }
+export interface ParsedDirection {
+  id: string;
+  title: string;
+  hook: string;
+}
+
+export type FatedRevealParseResult =
+  | { ok: true; why: string; directions: ParsedDirection[] }
   | { ok: false; errors: string[] };
 
 function stripCodeFences(value: string): string {
@@ -111,10 +132,7 @@ function stripCodeFences(value: string): string {
     .trim();
 }
 
-export function parseCandidates(
-  raw: string,
-  allowedIds: Set<string>
-): CandidatesParseResult {
+export function parseFatedReveal(raw: string): FatedRevealParseResult {
   let parsed: unknown;
   try {
     parsed = JSON.parse(stripCodeFences(raw));
@@ -126,51 +144,65 @@ export function parseCandidates(
     return { ok: false, errors: ["parsed JSON is not an object"] };
   }
 
-  const candidatesField = (parsed as { candidates?: unknown }).candidates;
-  if (!Array.isArray(candidatesField)) {
-    return { ok: false, errors: ["'candidates' must be an array"] };
-  }
-
-  if (candidatesField.length < 3 || candidatesField.length > 5) {
-    return {
-      ok: false,
-      errors: [`'candidates' must contain 3 to 5 entries, got ${candidatesField.length}`],
-    };
-  }
-
   const errors: string[] = [];
-  const out: { id: string; hook: string }[] = [];
+
+  const whyField = (parsed as { why?: unknown }).why;
+  if (typeof whyField !== "string" || whyField.trim() === "") {
+    errors.push("'why' must be a non-empty string");
+  }
+
+  const directionsField = (parsed as { directions?: unknown }).directions;
+  if (!Array.isArray(directionsField)) {
+    errors.push("'directions' must be an array");
+    return { ok: false, errors };
+  }
+
+  if (directionsField.length !== DIRECTION_COUNT) {
+    errors.push(`'directions' must contain exactly ${DIRECTION_COUNT} entries, got ${directionsField.length}`);
+  }
+
+  const out: ParsedDirection[] = [];
   const seen = new Set<string>();
 
-  for (const entry of candidatesField) {
+  for (const entry of directionsField) {
     if (typeof entry !== "object" || entry === null) {
-      errors.push("each candidate must be an object");
+      errors.push("each direction must be an object");
       continue;
     }
     const id = (entry as { id?: unknown }).id;
+    const title = (entry as { title?: unknown }).title;
     const hook = (entry as { hook?: unknown }).hook;
-    if (typeof id !== "string" || !id) {
-      errors.push("each candidate must have a non-empty 'id' string");
+
+    if (typeof id !== "string" || id.trim() === "") {
+      errors.push("each direction must have a non-empty 'id' string");
       continue;
     }
-    if (!allowedIds.has(id)) {
-      errors.push(`unknown candidate id '${id}' — must be one from the prefiltered roster`);
+    const normalizedId = id.trim();
+    if (seen.has(normalizedId)) {
+      errors.push(`duplicate direction id '${normalizedId}'`);
       continue;
     }
-    if (seen.has(id)) {
-      errors.push(`duplicate candidate id '${id}'`);
+    seen.add(normalizedId);
+
+    if (typeof title !== "string" || title.trim() === "") {
+      errors.push(`direction '${normalizedId}' has an empty title`);
       continue;
     }
-    seen.add(id);
     if (typeof hook !== "string" || hook.trim() === "") {
-      errors.push(`candidate '${id}' has an empty hook`);
+      errors.push(`direction '${normalizedId}' has an empty hook`);
       continue;
     }
-    out.push({ id, hook: hook.trim() });
+
+    out.push({ id: normalizedId, title: title.trim(), hook: hook.trim() });
   }
 
   if (errors.length > 0) {
     return { ok: false, errors };
   }
-  return { ok: true, candidates: out };
+
+  return {
+    ok: true,
+    why: (whyField as string).trim(),
+    directions: out,
+  };
 }

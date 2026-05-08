@@ -1,0 +1,517 @@
+<h2>Three intensity levels of Genshin-flavored treatment</h2>
+<p class="subtitle">Stages 1–2 are the same Q2 question; stage 3 is the reveal moment (Genshin's "Wish" pull, theatrical by design). Click your favorite — or pick a combination (e.g., 1 for questions + 3 for reveal).</p>
+
+<style>
+  .gs-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 28px;
+    margin-top: 14px;
+  }
+  @media (min-width: 1100px) {
+    .gs-grid { grid-template-columns: 1fr 1fr 1fr; }
+  }
+
+  .gs-card { cursor: pointer; transition: transform 200ms ease; }
+  .gs-card:hover { transform: translateY(-3px); }
+  .gs-name {
+    font-size: 11px;
+    letter-spacing: 0.20em;
+    text-transform: uppercase;
+    color: #6b6359;
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+  .gs-blurb { font-size: 12px; color: #4a4238; line-height: 1.6; margin: 10px 0 0; }
+  .gs-cost {
+    font-size: 10px;
+    color: #8a7e6c;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    margin-top: 6px;
+  }
+
+  .vp {
+    height: 540px;
+    border-radius: 4px;
+    border: 1px solid rgba(31,27,21,0.15);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 28px;
+    text-align: center;
+  }
+
+  /* Genshin gold */
+  :root {
+    --gs-gold: #c9a45a;
+    --gs-gold-bright: #e4c178;
+    --gs-anemo: #74c2a4;
+    --gs-anemo-deep: #3a8060;
+    --gs-night: #14213d;
+    --gs-night-deep: #0a1228;
+  }
+
+  /* ───────── 1 · Whisper ───────── */
+  .vp.whisper {
+    background:
+      linear-gradient(180deg, #c8d4d2 0%, #a8c2bf 50%, #d4c8a0 90%, #b89860 100%);
+  }
+  .whisper .mountains {
+    position: absolute;
+    bottom: 22%;
+    left: -2%; right: -2%;
+    width: 104%;
+    height: 36%;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+  .whisper .mountains-far {
+    position: absolute;
+    bottom: 30%;
+    left: -2%; right: -2%;
+    width: 104%;
+    height: 22%;
+    pointer-events: none;
+    opacity: 0.32;
+  }
+  .whisper::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 90px;
+    background: linear-gradient(180deg, rgba(20,30,45,0.22), transparent);
+    pointer-events: none; z-index: 1;
+  }
+  .whisper::after {
+    content: "";
+    position: absolute; bottom: 0; left: 0; right: 0; height: 110px;
+    background: linear-gradient(0deg, rgba(20,30,45,0.18), transparent);
+    pointer-events: none; z-index: 1;
+  }
+  .whisper .corner {
+    position: absolute;
+    color: var(--gs-gold);
+    font-size: 22px;
+    z-index: 2;
+    line-height: 1;
+  }
+  .whisper .corner.tl { top: 14px; left: 14px; }
+  .whisper .corner.br { bottom: 14px; right: 14px; }
+  .whisper .vision-mark {
+    position: absolute;
+    top: 14px; right: 18px;
+    z-index: 2;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    color: var(--gs-anemo-deep);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .whisper .vision-dot {
+    width: 8px; height: 8px;
+    background: var(--gs-anemo);
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(116,194,164,0.8);
+  }
+  .whisper .wind-line {
+    position: absolute;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    pointer-events: none;
+    animation: drift-h 7s linear infinite;
+  }
+  @keyframes drift-h {
+    0% { transform: translateX(-30%); opacity: 0; }
+    20% { opacity: 0.7; }
+    80% { opacity: 0.5; }
+    100% { transform: translateX(60%); opacity: 0; }
+  }
+  .whisper .vp-content { position: relative; z-index: 3; }
+  .whisper .eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.30em;
+    text-transform: uppercase;
+    color: var(--gs-gold);
+    margin-bottom: 22px;
+  }
+  .whisper .question {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 32px;
+    font-weight: 300;
+    color: #1a1612;
+    line-height: 1.1;
+    margin: 0 0 32px;
+    max-width: 380px;
+    text-shadow: 0 1px 0 rgba(255,250,235,0.6);
+  }
+  .whisper .opts { display: grid; gap: 12px; max-width: 380px; width: 100%; }
+  .whisper .opt {
+    padding: 14px 0;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(31,27,21,0.25);
+    font-family: Georgia, serif;
+    font-size: 15px;
+    color: #2a2520;
+  }
+  .whisper .opt.selected {
+    color: #14213d;
+    font-style: italic;
+    border-bottom: 1px solid var(--gs-anemo);
+  }
+  .whisper .scroll-hint {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--gs-gold);
+    font-size: 16px;
+    z-index: 3;
+    animation: bob 2.4s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translate(-50%, 0); }
+    50% { transform: translate(-50%, 5px); }
+  }
+
+  /* ───────── 2 · Court ───────── */
+  .vp.court {
+    background:
+      radial-gradient(ellipse at top, rgba(228,193,120,0.20), transparent 60%),
+      linear-gradient(180deg, #ecdcb8 0%, #d4bf8c 100%);
+  }
+  .court::before {
+    content: "";
+    position: absolute; inset: 18px;
+    border: 1px solid var(--gs-gold);
+    pointer-events: none;
+  }
+  .court::after {
+    content: "";
+    position: absolute; inset: 24px;
+    border: 1px solid rgba(201,164,90,0.4);
+    pointer-events: none;
+  }
+  .court .filigree {
+    position: absolute;
+    width: 64px; height: 64px;
+    color: var(--gs-gold);
+    pointer-events: none;
+  }
+  .court .filigree.tl { top: 8px; left: 8px; }
+  .court .filigree.tr { top: 8px; right: 8px; transform: scaleX(-1); }
+  .court .filigree.bl { bottom: 8px; left: 8px; transform: scaleY(-1); }
+  .court .filigree.br { bottom: 8px; right: 8px; transform: scale(-1, -1); }
+  .court .vision-badge {
+    position: relative;
+    margin-bottom: 18px;
+    width: 38px; height: 38px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--gs-anemo) 0%, var(--gs-anemo-deep) 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 18px;
+    box-shadow: 0 0 18px rgba(116,194,164,0.6);
+    border: 1px solid var(--gs-gold);
+  }
+  .court .eyebrow {
+    font-family: Georgia, serif;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--gs-gold);
+    margin-bottom: 12px;
+  }
+  .court .question {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 26px;
+    font-style: italic;
+    color: #2a1f10;
+    line-height: 1.2;
+    margin: 0 0 16px;
+    max-width: 360px;
+  }
+  .court .question .dropcap {
+    font-size: 56px;
+    line-height: 0.8;
+    float: left;
+    color: var(--gs-gold);
+    margin: 4px 8px 0 0;
+    font-style: normal;
+  }
+  .court .ornament {
+    color: var(--gs-gold);
+    font-size: 16px;
+    letter-spacing: 0.6em;
+    margin-bottom: 18px;
+  }
+  .court .opts { display: grid; gap: 4px; max-width: 380px; width: 100%; }
+  .court .opt {
+    padding: 8px 0;
+    background: transparent;
+    border: none;
+    font-family: Georgia, serif;
+    font-size: 14px;
+    color: #4a3a20;
+    font-style: italic;
+  }
+  .court .opt.selected {
+    color: #2a1f10;
+  }
+  .court .opt.selected::before {
+    content: "❧ ";
+    color: var(--gs-gold);
+    font-style: normal;
+  }
+  .court .scroll-hint {
+    position: absolute;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--gs-gold);
+    font-size: 16px;
+    animation: bob 2.4s ease-in-out infinite;
+  }
+
+  /* ───────── 3 · Wish (Reveal) ───────── */
+  .vp.wish {
+    background:
+      radial-gradient(ellipse at center, #2a3858 0%, #14213d 50%, #0a1228 100%);
+  }
+  .wish::before {
+    content: "";
+    position: absolute; inset: 0;
+    background:
+      conic-gradient(
+        from 90deg at 50% 60%,
+        transparent 0deg,
+        rgba(228,193,120,0.18) 25deg,
+        transparent 50deg,
+        rgba(228,193,120,0.10) 80deg,
+        transparent 110deg,
+        rgba(228,193,120,0.20) 145deg,
+        transparent 175deg,
+        rgba(228,193,120,0.08) 220deg,
+        transparent 250deg,
+        rgba(228,193,120,0.16) 290deg,
+        transparent 330deg,
+        rgba(228,193,120,0.18) 360deg
+      );
+    pointer-events: none;
+  }
+  .wish::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center 60%, rgba(228,193,120,0.35) 0%, transparent 35%);
+    pointer-events: none;
+  }
+  .wish .star {
+    position: absolute;
+    width: 2px; height: 2px;
+    background: rgba(255,250,235,0.9);
+    border-radius: 50%;
+    box-shadow: 0 0 4px rgba(255,250,235,0.6);
+    pointer-events: none;
+    animation: twinkle 4s ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+  }
+  .wish .silhouette {
+    position: absolute;
+    bottom: 30%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 110px;
+    height: 180px;
+    background: linear-gradient(180deg, var(--gs-anemo) 0%, var(--gs-anemo-deep) 80%, transparent 100%);
+    -webkit-mask-image: radial-gradient(ellipse at top, black 30%, transparent 70%);
+            mask-image: radial-gradient(ellipse at top, black 30%, transparent 70%);
+    border-radius: 50% 50% 30% 30% / 60% 60% 40% 40%;
+    box-shadow: 0 0 50px rgba(116,194,164,0.6);
+    pointer-events: none;
+    z-index: 2;
+  }
+  .wish .filigree {
+    position: absolute;
+    width: 64px; height: 64px;
+    color: var(--gs-gold-bright);
+    pointer-events: none;
+    z-index: 3;
+  }
+  .wish .filigree.tl { top: 12px; left: 12px; }
+  .wish .filigree.tr { top: 12px; right: 12px; transform: scaleX(-1); }
+  .wish .vision-badge {
+    position: relative;
+    margin: 0 auto 18px;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--gs-anemo) 0%, var(--gs-anemo-deep) 100%);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 28px;
+    box-shadow:
+      0 0 30px rgba(116,194,164,0.8),
+      0 0 0 1px var(--gs-gold-bright);
+    z-index: 4;
+  }
+  .wish .vp-content { position: relative; z-index: 4; margin-top: -120px; }
+  .wish .eyebrow {
+    font-family: Georgia, serif;
+    font-size: 11px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--gs-gold-bright);
+    margin-bottom: 16px;
+  }
+  .wish .name {
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 52px;
+    font-weight: 300;
+    color: #f5e8c8;
+    line-height: 1;
+    margin: 0;
+    letter-spacing: 0.04em;
+    text-shadow: 0 0 20px rgba(228,193,120,0.4);
+  }
+  .wish .epithet {
+    font-family: Georgia, serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--gs-gold-bright);
+    margin: 10px 0 0;
+    letter-spacing: 0.06em;
+  }
+  .wish .nation-row {
+    margin-top: 16px;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: rgba(245,232,200,0.7);
+  }
+  .wish .nation-row .sep { color: var(--gs-gold-bright); margin: 0 10px; }
+  .wish .advance {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 4;
+    color: var(--gs-gold-bright);
+    font-family: Georgia, serif;
+    font-size: 12px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .wish .advance .arrow {
+    display: block;
+    margin-top: 6px;
+    font-size: 18px;
+    animation: bob-static 2.4s ease-in-out infinite;
+  }
+  @keyframes bob-static {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(0, 5px); }
+  }
+</style>
+
+<div class="gs-grid">
+  <!-- 1 · Whisper -->
+  <div class="card gs-card" data-choice="whisper" onclick="toggleSelect(this)">
+    <p class="gs-name">1 · Whisper</p>
+    <div class="vp whisper">
+      <svg class="mountains-far" viewBox="0 0 400 80" preserveAspectRatio="none">
+        <polygon points="0,80 50,40 110,55 180,30 240,48 320,32 380,50 400,38 400,80" fill="#5a6878"/>
+      </svg>
+      <svg class="mountains" viewBox="0 0 400 100" preserveAspectRatio="none">
+        <polygon points="0,100 40,55 90,75 140,40 200,68 260,38 310,62 360,42 400,68 400,100" fill="#3d4858"/>
+      </svg>
+      <span class="corner tl">❦</span>
+      <span class="corner br">❦</span>
+      <div class="vision-mark"><span class="vision-dot"></span> Anemo</div>
+      <span class="wind-line" style="top:32%; left:0; width:50%; animation-delay:0s;"></span>
+      <span class="wind-line" style="top:48%; left:20%; width:40%; animation-delay:2s;"></span>
+      <span class="wind-line" style="top:62%; left:10%; width:55%; animation-delay:4s;"></span>
+
+      <div class="vp-content">
+        <p class="eyebrow">Mood · ii of vii</p>
+        <h3 class="question">What calls to you across the wind?</h3>
+        <div class="opts">
+          <div class="opt">A bell tolling somewhere unseen</div>
+          <div class="opt selected">A name you don't yet know</div>
+          <div class="opt">The hush before a storm</div>
+          <div class="opt">Nothing — only the wind</div>
+        </div>
+      </div>
+      <div class="scroll-hint">⌄</div>
+    </div>
+    <p class="gs-blurb">Cinematic restraint, Genshin atmosphere. Painterly mountain horizon. Vision color is the only saturation in the palette. Wind streaks drift across (per-element: embers for Pyro, snow for Cryo, petals for Hydro/Dendro). Tiny gold corner accents. The page <em>looks</em> Genshin without dressing up like Genshin.</p>
+    <p class="gs-cost">cost · medium · CSS + per-Vision SVG horizons + element particle map</p>
+  </div>
+
+  <!-- 2 · Court -->
+  <div class="card gs-card" data-choice="court" onclick="toggleSelect(this)">
+    <p class="gs-name">2 · Court</p>
+    <div class="vp court">
+      <svg class="filigree tl" viewBox="0 0 64 64"><path d="M2,2 L62,2 M2,2 L2,62 M2,2 Q22,12 32,32 M2,2 Q12,22 32,32 M2,32 Q14,28 22,22 M32,2 Q28,14 22,22" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.85"/></svg>
+      <svg class="filigree tr" viewBox="0 0 64 64"><path d="M2,2 L62,2 M2,2 L2,62 M2,2 Q22,12 32,32 M2,2 Q12,22 32,32 M2,32 Q14,28 22,22 M32,2 Q28,14 22,22" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.85"/></svg>
+      <svg class="filigree bl" viewBox="0 0 64 64"><path d="M2,2 L62,2 M2,2 L2,62 M2,2 Q22,12 32,32 M2,2 Q12,22 32,32 M2,32 Q14,28 22,22 M32,2 Q28,14 22,22" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.85"/></svg>
+      <svg class="filigree br" viewBox="0 0 64 64"><path d="M2,2 L62,2 M2,2 L2,62 M2,2 Q22,12 32,32 M2,2 Q12,22 32,32 M2,32 Q14,28 22,22 M32,2 Q28,14 22,22" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.85"/></svg>
+
+      <div class="vision-badge">≋</div>
+      <p class="eyebrow">II · Mood</p>
+      <h3 class="question">
+        <span class="dropcap">W</span>hat calls to you across the wind?
+      </h3>
+      <p class="ornament">❧ · ❧ · ❧</p>
+      <div class="opts">
+        <div class="opt">A bell tolling somewhere unseen</div>
+        <div class="opt selected">A name you don't yet know</div>
+        <div class="opt">The hush before a storm</div>
+        <div class="opt">Nothing — only the wind</div>
+      </div>
+      <div class="scroll-hint">⌄</div>
+    </div>
+    <p class="gs-blurb">Maxes out the ornament budget — gold filigree corners, cream-and-gold scroll, drop cap, fleurons, glowing Vision badge. Reads as a Genshin lore document. Strong on the questionnaire chapters but heavy if every stage uses this much chrome — pair with Whisper for variety.</p>
+    <p class="gs-cost">cost · medium–high · custom SVG flourishes per corner, gold-tone discipline</p>
+  </div>
+
+  <!-- 3 · Wish (Reveal moment) -->
+  <div class="card gs-card" data-choice="wish" onclick="toggleSelect(this)">
+    <p class="gs-name">3 · Wish (reveal stage)</p>
+    <div class="vp wish">
+      <span class="star" style="top:8%; left:15%; animation-delay:0s;"></span>
+      <span class="star" style="top:14%; left:78%; animation-delay:1s;"></span>
+      <span class="star" style="top:22%; left:42%; animation-delay:2s;"></span>
+      <span class="star" style="top:30%; left:8%; animation-delay:0.5s;"></span>
+      <span class="star" style="top:38%; left:88%; animation-delay:1.5s;"></span>
+      <span class="star" style="top:18%; left:60%; animation-delay:2.5s;"></span>
+      <span class="star" style="top:46%; left:22%; animation-delay:3s;"></span>
+      <span class="star" style="top:10%; left:35%; animation-delay:1.2s;"></span>
+
+      <div class="silhouette"></div>
+
+      <svg class="filigree tl" viewBox="0 0 64 64"><path d="M2,2 L62,2 M2,2 L2,62 M2,2 Q22,12 32,32 M2,2 Q12,22 32,32" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.9"/></svg>
+      <svg class="filigree tr" viewBox="0 0 64 64"><path d="M2,2 L62,2 M2,2 L2,62 M2,2 Q22,12 32,32 M2,2 Q12,22 32,32" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.9"/></svg>
+
+      <div class="vp-content">
+        <div class="vision-badge">≋</div>
+        <p class="eyebrow">What you sought has answered</p>
+        <h3 class="name">Lirien</h3>
+        <p class="epithet">— of the seven winds —</p>
+        <p class="nation-row">Mondstadt <span class="sep">·</span> Anemo <span class="sep">·</span> Catalyst</p>
+      </div>
+
+      <div class="advance">
+        Walk into her world
+        <span class="arrow">⌄</span>
+      </div>
+    </div>
+    <p class="gs-blurb">The reveal stage at maximum theatre. Deep navy night sky, drifting stars, golden conic-gradient rays bursting from the silhouette, Vision-color silhouette emerging from the dark, gold filigree at top corners. Name big, breath of awe. This is the gacha-pull moment your existing reveal screen is gesturing at but not landing.</p>
+    <p class="gs-cost">cost · medium · CSS gradients + SVG (no canvas/WebGL needed). Portrait image replaces silhouette when ready.</p>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 26px; font-size: 13px;">Most useful combination is probably <strong>Whisper for questionnaire/scenes + Wish for the reveal stage</strong> — calm pages with Vision atmosphere, then a single theatrical peak. Court is for if you want every chapter to feel like a Liyue scroll.</p>

@@ -1,0 +1,206 @@
+<h2>Snap-scroll model — confirm the shape</h2>
+<p class="subtitle">Left: the full vertical document, all stages stacked. Right: what one viewport (the active stage) looks like. Scroll on the left side to move between stages.</p>
+
+<style>
+  .frame {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 24px;
+    margin-top: 14px;
+    align-items: start;
+  }
+
+  /* Left: filmstrip of stages */
+  .strip-wrap {
+    border: 1px solid rgba(31,27,21,0.12);
+    background: rgba(31,27,21,0.03);
+    border-radius: 4px;
+    padding: 10px;
+    max-height: 620px;
+    overflow-y: auto;
+  }
+  .strip-label {
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #6b6359;
+    margin-bottom: 8px;
+  }
+  .strip-stage {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .stage-num {
+    font-family: Georgia, serif;
+    font-size: 9px;
+    color: #8a7e6c;
+    width: 18px;
+    text-align: right;
+    padding-top: 16px;
+  }
+  .stage-thumb {
+    flex: 1;
+    height: 44px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, #f5ecd9, #eadcc0);
+    border: 1px solid rgba(31,27,21,0.10);
+    padding: 4px 6px;
+    font-family: Georgia, serif;
+    font-size: 9px;
+    color: #5a4f44;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.2;
+    text-align: center;
+  }
+  .stage-thumb.intro { background: linear-gradient(180deg, rgba(255,255,255,0.5), rgba(245,236,217,0.7)); font-style: italic; }
+  .stage-thumb.q { font-size: 8px; }
+  .stage-thumb.reveal { background: linear-gradient(180deg, #f9d8a8, #e8b27e); color: #4a2e1a; font-weight: 600; }
+  .stage-thumb.scene { background: linear-gradient(180deg, #f5ecd9, #d8c8a4); }
+  .stage-thumb.ending { background: linear-gradient(180deg, #d9e3ec, #aebfd0); }
+  .stage-thumb.active { outline: 2px solid #2a2520; outline-offset: 1px; box-shadow: 0 4px 12px rgba(31,27,21,0.15); }
+
+  /* Right: simulated viewport */
+  .viewport {
+    border: 1px solid rgba(31,27,21,0.12);
+    background: linear-gradient(180deg, #f5ecd9 0%, #eadcc0 100%);
+    border-radius: 6px;
+    height: 620px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 36px;
+    text-align: center;
+    position: relative;
+  }
+  .viewport-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.20em;
+    text-transform: uppercase;
+    color: #8a7e6c;
+    margin-bottom: 20px;
+  }
+  .viewport-question {
+    font-family: Georgia, serif;
+    font-size: 30px;
+    color: #2a2520;
+    line-height: 1.15;
+    margin: 0 0 28px;
+    max-width: 480px;
+  }
+  .viewport-options {
+    display: grid;
+    gap: 10px;
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+  }
+  .viewport-option {
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.36);
+    border: 1px solid rgba(31,27,21,0.10);
+    color: #4a4238;
+    font-size: 13px;
+    line-height: 1.55;
+    text-align: left;
+    border-radius: 2px;
+  }
+  .viewport-option.selected {
+    background: rgba(31,27,21,0.06);
+    border-color: #2a2520;
+    color: #2a2520;
+  }
+  .scroll-hint {
+    position: absolute;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #8a7e6c;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .scroll-hint .arrow { font-size: 14px; opacity: 0.6; }
+  .scroll-hint-up {
+    top: 18px;
+    bottom: auto;
+  }
+
+  .annotations {
+    margin-top: 18px;
+    display: grid;
+    gap: 8px;
+  }
+  .annotation {
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.3);
+    border-left: 2px solid #6b6359;
+    font-size: 12px;
+    color: #4a4238;
+    line-height: 1.6;
+  }
+  .annotation strong { color: #2a2520; letter-spacing: 0.04em; }
+</style>
+
+<div class="frame">
+  <div>
+    <div class="strip-label">Vertical document — full run</div>
+    <div class="strip-wrap">
+      <div class="strip-stage"><div class="stage-num">01</div><div class="stage-thumb intro">Title</div></div>
+      <div class="strip-stage"><div class="stage-num">02</div><div class="stage-thumb intro">Mood — chapter</div></div>
+      <div class="strip-stage"><div class="stage-num">03</div><div class="stage-thumb q">Q1 · how do you move</div></div>
+      <div class="strip-stage"><div class="stage-num">04</div><div class="stage-thumb q active">Q2 · what calls you</div></div>
+      <div class="strip-stage"><div class="stage-num">05</div><div class="stage-thumb q">Q3 · what you keep close</div></div>
+      <div class="strip-stage"><div class="stage-num">06</div><div class="stage-thumb intro">Desire — chapter</div></div>
+      <div class="strip-stage"><div class="stage-num">07</div><div class="stage-thumb q">Q4 · what you reach for</div></div>
+      <div class="strip-stage"><div class="stage-num">08</div><div class="stage-thumb q">Q5 · what you'd risk</div></div>
+      <div class="strip-stage"><div class="stage-num">09</div><div class="stage-thumb intro">Conflict — chapter</div></div>
+      <div class="strip-stage"><div class="stage-num">10</div><div class="stage-thumb q">Q6 · what stops you</div></div>
+      <div class="strip-stage"><div class="stage-num">11</div><div class="stage-thumb q">Q7 · what you'd choose</div></div>
+      <div class="strip-stage"><div class="stage-num">12</div><div class="stage-thumb reveal">★ Reveal</div></div>
+      <div class="strip-stage"><div class="stage-num">13</div><div class="stage-thumb scene">Scene I</div></div>
+      <div class="strip-stage"><div class="stage-num">14</div><div class="stage-thumb scene">Scene II</div></div>
+      <div class="strip-stage"><div class="stage-num">15</div><div class="stage-thumb scene">Scene III</div></div>
+      <div class="strip-stage"><div class="stage-num">…</div><div class="stage-thumb scene">Scene IV–IX</div></div>
+      <div class="strip-stage"><div class="stage-num">22</div><div class="stage-thumb scene">Scene X</div></div>
+      <div class="strip-stage"><div class="stage-num">23</div><div class="stage-thumb ending">Ending</div></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="viewport">
+      <div class="scroll-hint scroll-hint-up">
+        <span class="arrow">↑</span>
+        <span>scroll up to redo</span>
+      </div>
+      <p class="viewport-eyebrow">Mood · Question 2 of 7</p>
+      <h2 class="viewport-question">What calls to you across the wind?</h2>
+      <div class="viewport-options">
+        <div class="viewport-option">A bell tolling somewhere unseen</div>
+        <div class="viewport-option selected">A name you don't yet know</div>
+        <div class="viewport-option">The hush before a storm</div>
+        <div class="viewport-option">Nothing — only the wind itself</div>
+      </div>
+      <div class="scroll-hint">
+        <span>scroll down to commit</span>
+        <span class="arrow">↓</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="annotations">
+  <div class="annotation"><strong>One stage = 100vh.</strong> Title, each chapter intro, each question, the reveal, each scene, the ending — all full-viewport. CSS scroll-snap snaps to each one.</div>
+  <div class="annotation"><strong>Scrolling up = revisiting.</strong> Past stages stay live and editable. Change a question's answer → downstream stages need to regenerate. Re-read a past scene at full fidelity.</div>
+  <div class="annotation"><strong>Scrolling down = advancing.</strong> When you select an option, the page auto-scrolls to the next stage. If the next stage needs LLM generation, it streams in while in view.</div>
+</div>
+
+<p class="subtitle" style="margin-top: 24px; font-size: 13px;">Look right? If yes, the next thing to nail is what happens visually when you scroll up and change a past selection (the downstream invalidation pattern).</p>

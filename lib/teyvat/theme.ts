@@ -32,3 +32,6 @@ export function themeForVision(vision: Vision): ThemeForVision {
     border: `color-mix(in srgb, ${palette.accent} 22%, ${INK} 12%)`,
   };
 }
+
+export const STAGE_FONT_DISPLAY = "Georgia, 'Times New Roman', serif";
+export const TIER_TRANSITION = "background 600ms ease, color 400ms ease";

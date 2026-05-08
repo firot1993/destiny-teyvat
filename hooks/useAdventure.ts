@@ -809,7 +809,9 @@ export function useAdventure(): UseAdventureResult {
       const existing = findChildByChoice(adventure.tree, parentId, choice);
       if (existing) {
         // Switch siblings — no LLM call needed.
-        setAdventure({ ...adventure, tree: switchSibling(adventure.tree, existing.id) });
+        const switched: AdventureState = { ...adventure, tree: switchSibling(adventure.tree, existing.id) };
+        setAdventure(switched);
+        saveAdventure(switched);
         scrollToStageDelta(1);
         return;
       }
@@ -836,16 +838,14 @@ export function useAdventure(): UseAdventureResult {
           summary: parsed.summary || `Scene ${sceneNumber}`,
           fromChoice: choice,
         };
-        setAdventure((prev) =>
-          prev
-            ? {
-                ...prev,
-                tree: forkAt(prev.tree, parentId, node),
-                ended: forcedClosing ? true : parsed.closing,
-                endedBy: forcedClosing || parsed.closing ? "model" : null,
-              }
-            : null
-        );
+        const forked: AdventureState = {
+          ...adventure,
+          tree: forkAt(adventure.tree, parentId, node),
+          ended: forcedClosing ? true : parsed.closing,
+          endedBy: forcedClosing || parsed.closing ? "model" : null,
+        };
+        setAdventure(forked);
+        saveAdventure(forked);
         if (!isLeafFork) {
           // Leaf forks are handled by the auto-scroll effect in page.tsx;
           // non-leaf forks must scroll explicitly.

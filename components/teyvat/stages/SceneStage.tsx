@@ -188,22 +188,23 @@ export function SceneStage({
 
           {/* Streaming cursor */}
           {streaming && (
-            <span style={{
-              display: "inline-block",
-              width: 10,
-              height: "1.1em",
-              background: palette.accent,
-              opacity: 0.8,
-              verticalAlign: "text-bottom",
-              animation: "blink 1s step-end infinite",
-            }} />
+            <>
+              <style>{`@keyframes blink { 0%, 100% { opacity: 0.9 } 50% { opacity: 0 } }`}</style>
+              <span style={{
+                color: palette.accent,
+                fontFamily: "monospace",
+                fontSize: 17,
+                lineHeight: 1,
+                verticalAlign: "text-bottom",
+                animation: "blink 1s step-end infinite",
+              }}>▋</span>
+            </>
           )}
         </div>
 
         {/* Choices (after prose, not streaming, not closing) */}
         {!streaming && !closing && choices.length > 0 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
-            <style>{`@keyframes blink { 0%, 100% { opacity: 0.8 } 50% { opacity: 0 } }`}</style>
             {choices.map((choice, i) => {
               const taken = takenChoices.includes(choice);
               const disabled = pickedChoice !== null && pickedChoice !== choice;

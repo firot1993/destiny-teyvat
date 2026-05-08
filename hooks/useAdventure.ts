@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Language, Message } from "@/types";
 import {
   API_ROUTE,
@@ -67,6 +67,18 @@ export type AdventurePhase =
 
 export interface UseAdventureResult {
   phase: AdventurePhase;
+  /** Derived loading flags (replaces raw phase checks in UI). */
+  loading: { reveal: boolean; scene: boolean };
+  /** True once the user has committed past the reveal (first scene generated). */
+  isCommitted: boolean;
+  /** Live answers collected step-by-step by the snap-scroll questionnaire. */
+  answers: TeyvatAnswers;
+  /** Index of the currently visible snap-scroll stage. */
+  currentStageIndex: number;
+  /** True while the bookshelf overlay is open. */
+  bookshelfOpen: boolean;
+  /** Ref to the snap-scroll document div — attach as `ref={adv.docRef}`. */
+  docRef: React.RefObject<HTMLDivElement | null>;
   character: RevealedCharacter | null;
   characterImageUrl: string | null;
   adventure: AdventureState | null;
@@ -85,6 +97,16 @@ export interface UseAdventureResult {
   storyDirections: ParsedDirection[] | null;
   lastAnswers: TeyvatAnswers | null;
   hasSavedAdventure: boolean;
+  /** Store a single answer without triggering generation. */
+  updateAnswer(stepId: string, value: string): void;
+  /** Trigger reveal/fated-reveal generation using the collected `answers`. */
+  commitReveal(language: Language): Promise<void>;
+  /** Scroll to a specific stage by absolute index. */
+  scrollToStage(index: number): void;
+  /** Scroll forward/backward by `delta` stages relative to current. */
+  scrollToStageDelta(delta: number): void;
+  /** Returns already-taken sibling choices at `sceneDepth` (Phase 5 will implement; returns [] for now). */
+  takenChoicesAt(sceneDepth: number): string[];
   begin(): void;
   openBookshelf(): void;
   closeBookshelf(): void;
@@ -209,6 +231,10 @@ export function useAdventure(): UseAdventureResult {
   const [revealReason, setRevealReason] = useState<string | null>(null);
   const [storyDirections, setStoryDirections] = useState<ParsedDirection[] | null>(null);
   const [lastAnswers, setLastAnswers] = useState<TeyvatAnswers | null>(null);
+  // Stage-index + snap-scroll state
+  const [currentStageIndex, setCurrentStageIndex] = useState(0);
+  const [answers, setAnswers] = useState<TeyvatAnswers>({});
+  const docRef = useRef<HTMLDivElement | null>(null);
   const availablePromptVariants = listPromptVariants();
   const questionnaireSchema = getPromptVariant(promptVariant).capabilities.questionnaire;
 
@@ -867,8 +893,60 @@ export function useAdventure(): UseAdventureResult {
     setPromptVariantState(nextVariant);
   }, []);
 
+  // ── Stage-index + snap-scroll helpers ────────────────────────────────────
+
+  const scrollToStage = useCallback((index: number) => {
+    const doc = docRef.current;
+    if (!doc) return;
+    const stage = doc.querySelectorAll<HTMLElement>("[data-stage]")[index];
+    if (stage) stage.scrollIntoView({ behavior: "smooth", block: "start" });
+    setCurrentStageIndex(index);
+  }, []);
+
+  const scrollToStageDelta = useCallback((delta: number) => {
+    setCurrentStageIndex((prev) => {
+      const next = prev + delta;
+      const doc = docRef.current;
+      if (doc) {
+        const stage = doc.querySelectorAll<HTMLElement>("[data-stage]")[next];
+        if (stage) stage.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      return next;
+    });
+  }, []);
+
+  const updateAnswer = useCallback((stepId: string, value: string) => {
+    setAnswers((prev) => ({ ...prev, [stepId]: value }));
+  }, []);
+
+  const commitReveal = useCallback(
+    async (language: Language) => {
+      await submitQuestionnaire(answers, language);
+    },
+    [answers, submitQuestionnaire]
+  );
+
+  const takenChoicesAt = useCallback((_sceneDepth: number): string[] => {
+    // Phase 5 will implement branching; linear path for now.
+    return [];
+  }, []);
+
+  // Derived state (no extra React state required)
+  const loading = {
+    reveal: phase === "revealing" || phase === "directions-generating",
+    scene: phase === "scene-generating",
+  };
+  const isCommitted = !!adventure?.committed;
+  const bookshelfOpen = phase === "bookshelf";
+
   return {
     phase,
+    loading,
+    isCommitted,
+    answers,
+    currentStageIndex,
+    bookshelfOpen,
+    docRef,
     character,
     characterImageUrl,
     adventure,
@@ -887,6 +965,11 @@ export function useAdventure(): UseAdventureResult {
     storyDirections,
     lastAnswers,
     hasSavedAdventure,
+    updateAnswer,
+    commitReveal,
+    scrollToStage,
+    scrollToStageDelta,
+    takenChoicesAt,
     begin,
     openBookshelf,
     closeBookshelf,

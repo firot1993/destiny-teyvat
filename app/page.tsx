@@ -119,6 +119,7 @@ export default function Page() {
   // 4. Scenes — one stage per active-path scene
   scenes.forEach((scene, idx) => {
     if (idx === 0 && !adv.isCommitted) return; // skip empty root pre-commit
+    const stageIndexHere = stages.length;
     stages.push(
       <SceneStage
         key={`scene-${idx}`}
@@ -129,11 +130,14 @@ export default function Page() {
         streaming={adv.loading.scene && idx === scenes.length - 1}
         closing={scene.closing}
         choices={scene.choices}
-        takenChoices={adv.takenChoicesAt(idx)}
+        takenChoices={adv.takenChoicesAt(scene.sceneNumber)}
         visionLabel={vision}
         pickedChoice={null}
-        onPickChoice={(c) => void adv.chooseChoice(c, lang)}
+        onPickChoice={(c) => void adv.chooseChoice(c, scene.sceneNumber, lang)}
         onStop={adv.stopHere}
+        siblings={adv.siblingsAt(scene.sceneNumber)}
+        onSwitchSibling={adv.switchToSibling}
+        isActiveStage={adv.currentStageIndex === stageIndexHere}
       />
     );
   });

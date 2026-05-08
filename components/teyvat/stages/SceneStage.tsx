@@ -1,6 +1,9 @@
 "use client";
+import { useEffect } from "react";
 import { StageWrapper } from "./StageWrapper";
+import { BranchPager } from "@/components/teyvat/BranchPager";
 import type { TierPalette } from "@/lib/teyvat/stageTiers";
+import type { SiblingInfo } from "@/hooks/useAdventure";
 import { useI18n } from "@/i18n";
 
 interface Props {
@@ -17,6 +20,12 @@ interface Props {
   pickedChoice: string | null;
   onPickChoice: (choice: string) => void;
   onStop: () => void;
+  /** Sibling branch info for the BranchPager. */
+  siblings: SiblingInfo;
+  /** Called when the user wants to switch to a specific sibling node. */
+  onSwitchSibling: (nodeId: string) => void;
+  /** True when this stage is the currently visible one (gates arrow-key listener). */
+  isActiveStage: boolean;
 }
 
 const ROMAN: Record<number, string> = {
@@ -41,8 +50,27 @@ export function SceneStage({
   pickedChoice,
   onPickChoice,
   onStop,
+  siblings,
+  onSwitchSibling,
+  isActiveStage,
 }: Props) {
   const { t } = useI18n();
+
+  // Arrow-key navigation between siblings (only when this stage is active).
+  useEffect(() => {
+    if (!isActiveStage) return;
+    function handler(ev: KeyboardEvent) {
+      if (siblings.branchCount < 2) return;
+      if (ev.target instanceof HTMLInputElement || ev.target instanceof HTMLTextAreaElement) return;
+      if (ev.key === "ArrowLeft" && siblings.activeIndex > 0) {
+        onSwitchSibling(siblings.siblings[siblings.activeIndex - 1].id);
+      } else if (ev.key === "ArrowRight" && siblings.activeIndex < siblings.branchCount - 1) {
+        onSwitchSibling(siblings.siblings[siblings.activeIndex + 1].id);
+      }
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [siblings, onSwitchSibling, isActiveStage]);
 
   const displayText = streaming ? streamingText : prose;
   const paragraphs = displayText.split(/\n\n+/).filter(Boolean);
@@ -103,6 +131,15 @@ export function SceneStage({
       <div style={{ position: "absolute", bottom: 16, right: 16, width: 18, height: 18, borderBottom: `1px solid ${palette.gold}`, borderRight: `1px solid ${palette.gold}`, opacity: 0.4 }} />
 
       <div style={scrollUpHint} aria-hidden>↑</div>
+
+      {/* Branch pager — shown above eyebrow when siblings exist */}
+      {siblings.branchCount >= 2 && (
+        <BranchPager
+          palette={palette}
+          siblings={siblings}
+          onSwitchSibling={onSwitchSibling}
+        />
+      )}
 
       <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 640, display: "flex", flexDirection: "column", gap: 16, paddingTop: 20 }}>
         {/* Eyebrow */}

@@ -78,7 +78,7 @@ export interface UseAdventureResult {
   /** True while the bookshelf overlay is open. */
   bookshelfOpen: boolean;
   /** Ref to the snap-scroll document div — attach as `ref={adv.docRef}`. */
-  docRef: React.RefObject<HTMLDivElement | null>;
+  docRef: React.RefObject<HTMLDivElement>;
   character: RevealedCharacter | null;
   characterImageUrl: string | null;
   adventure: AdventureState | null;
@@ -234,7 +234,7 @@ export function useAdventure(): UseAdventureResult {
   // Stage-index + snap-scroll state
   const [currentStageIndex, setCurrentStageIndex] = useState(0);
   const [answers, setAnswers] = useState<TeyvatAnswers>({});
-  const docRef = useRef<HTMLDivElement | null>(null);
+  const docRef = useRef<HTMLDivElement>(null);
   const availablePromptVariants = listPromptVariants();
   const questionnaireSchema = getPromptVariant(promptVariant).capabilities.questionnaire;
 

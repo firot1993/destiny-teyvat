@@ -7,6 +7,7 @@ import { buildRevealPrompt, buildScenePrompt } from "../../lib/teyvat/prompts";
 import type { TeyvatAnswers } from "../../lib/teyvat/questionnaire";
 import type { Framing, RevealedCharacter } from "../../lib/teyvat/character";
 import type { AdventureState } from "../../lib/teyvat/scenes";
+import { createTree } from "../../lib/teyvat/sceneTree";
 import type { Language } from "../../types";
 
 type PromptfooContext = {
@@ -51,16 +52,18 @@ const DEFAULT_CHARACTER: RevealedCharacter = {
 const DEFAULT_STATE: AdventureState = {
   id: "eval-fixture",
   character: DEFAULT_CHARACTER,
-  scenes: [
-    {
-      sceneNumber: 1,
-      text: "She crossed the gate and the cold recognized her.",
-      choices: ["follow the voice", "stay where you are", "turn back into the rain"],
-      closing: false,
-      summary: "Yuna arrives at the gate and recognizes the cold.",
-      fromChoice: "",
-    },
-  ],
+  tree: createTree({
+    id: "root",
+    parentId: null,
+    depth: 1,
+    choiceTaken: null,
+    prose: "She crossed the gate and the cold recognized her.",
+    choices: ["follow the voice", "stay where you are", "turn back into the rain"],
+    closing: false,
+    summary: "Yuna arrives at the gate and recognizes the cold.",
+    fromChoice: "",
+  }),
+  committed: true,
   ended: false,
   endedBy: null,
   startedAt: "2026-01-01T00:00:00.000Z",

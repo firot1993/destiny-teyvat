@@ -10,18 +10,32 @@ import {
   REVEAL_MAX_TOKENS,
   SCENE_MAX_TOKENS,
 } from "@/lib/constants";
-import { clearAdventure, loadAdventure, saveAdventure, archiveToLibrary, loadLibrary } from "@/lib/teyvat/storage";
 import {
-  buildCandidatesPrompt,
+  archiveToLibrary,
+  clearAdventure,
+  clearBackNavCaches,
+  hashAnswers,
+  loadAdventure,
+  loadLastAnswers,
+  loadLastFatedReveal,
+  loadLastReveal,
+  loadLibrary,
+  saveAdventure,
+  saveLastAnswers,
+  saveLastFatedReveal,
+  saveLastReveal,
+} from "@/lib/teyvat/storage";
+import {
+  buildFatedRevealPrompt,
   buildRevealPrompt,
   buildScenePrompt,
-  parseCandidates,
+  parseFatedReveal,
   parseReveal,
   parseSceneStream,
-  prefilterRoster,
+  pickFatedCharacter,
   CANON_ROSTER,
-  getCanonCharacter,
   type CanonCharacter,
+  type ParsedDirection,
 } from "@/lib/teyvat/prompts";
 import {
   DEFAULT_PROMPT_VARIANT_ID,
@@ -35,25 +49,21 @@ import {
 } from "@/lib/teyvat/promptSwitch";
 import type { Framing, RevealedCharacter } from "@/lib/teyvat/character";
 import type { QuestionnaireSchema, TeyvatAnswers } from "@/lib/teyvat/questionnaire";
-import type { AdventureState, Scene } from "@/lib/teyvat/scenes";
+import type { AdventureState, Scene, StoryDirection } from "@/lib/teyvat/scenes";
+import { activeScenesOf, nextSceneNumber, withSceneAppended } from "@/lib/teyvat/scenes";
+import { createTree, type SceneTree } from "@/lib/teyvat/sceneTree";
 
 export type AdventurePhase =
   | "idle"
   | "bookshelf"
   | "questionnaire"
   | "revealing"
-  | "candidates-generating"
-  | "candidate-pick"
+  | "directions-generating"
+  | "direction-pick"
   | "reveal-shown"
   | "scene-generating"
   | "scene-shown"
   | "ended";
-
-export interface CandidateOption {
-  character: CanonCharacter;
-  hook: string;
-  imageUrl: string | null;
-}
 
 export interface UseAdventureResult {
   phase: AdventurePhase;
@@ -70,14 +80,18 @@ export interface UseAdventureResult {
   promptVariant: string;
   availablePromptVariants: PromptVariantMeta[];
   questionnaireSchema: QuestionnaireSchema;
-  candidates: CandidateOption[] | null;
+  fatedCharacter: CanonCharacter | null;
+  revealReason: string | null;
+  storyDirections: ParsedDirection[] | null;
+  lastAnswers: TeyvatAnswers | null;
   hasSavedAdventure: boolean;
   begin(): void;
   openBookshelf(): void;
   closeBookshelf(): void;
   loadFromLibrary(id: string): boolean;
   submitQuestionnaire(answers: TeyvatAnswers, language: Language): Promise<void>;
-  pickCandidate(id: string, language: Language): Promise<void>;
+  pickDirection(id: string, language: Language): Promise<void>;
+  goBackToQuestionnaire(): void;
   enterWorld(language: Language): Promise<void>;
   chooseChoice(choice: string, language: Language): Promise<void>;
   stopHere(): void;
@@ -98,6 +112,36 @@ function rollFraming(): Framing {
 
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function freshAdventure(
+  character: RevealedCharacter,
+  variantId: string,
+  opts: { revealReason?: string; storyDirection?: StoryDirection | null } = {}
+): AdventureState {
+  return {
+    id: generateId(),
+    character,
+    tree: createTree({
+      id: generateId(),
+      parentId: null,
+      depth: 1,
+      choiceTaken: null,
+      // Empty root prose — overwritten on first scene generation.
+      prose: "",
+      choices: [],
+      closing: false,
+      summary: "",
+      fromChoice: "",
+    }),
+    ended: false,
+    endedBy: null,
+    startedAt: new Date().toISOString(),
+    variantId,
+    committed: false,
+    revealReason: opts.revealReason,
+    storyDirection: opts.storyDirection ?? null,
+  };
 }
 
 function parseHeaderInt(value: string | null): number | null {
@@ -161,7 +205,10 @@ export function useAdventure(): UseAdventureResult {
   const [hasSavedAdventure, setHasSavedAdventure] = useState(false);
   const [characterImageUrl, setCharacterImageUrl] = useState<string | null>(null);
   const [promptVariant, setPromptVariantState] = useState<string>(DEFAULT_PROMPT_VARIANT_ID);
-  const [candidates, setCandidates] = useState<CandidateOption[] | null>(null);
+  const [fatedCharacter, setFatedCharacter] = useState<CanonCharacter | null>(null);
+  const [revealReason, setRevealReason] = useState<string | null>(null);
+  const [storyDirections, setStoryDirections] = useState<ParsedDirection[] | null>(null);
+  const [lastAnswers, setLastAnswers] = useState<TeyvatAnswers | null>(null);
   const availablePromptVariants = listPromptVariants();
   const questionnaireSchema = getPromptVariant(promptVariant).capabilities.questionnaire;
 
@@ -173,6 +220,7 @@ export function useAdventure(): UseAdventureResult {
     setHasSavedAdventure(Boolean(loadAdventure()));
     refreshLibrary();
     setPromptVariantState(resolvePromptVariant());
+    setLastAnswers(loadLastAnswers());
   }, [refreshLibrary]);
 
   const updateQuotaHeaders = useCallback((response: Response) => {
@@ -233,6 +281,10 @@ export function useAdventure(): UseAdventureResult {
         const data = (await response.json()) as { url?: string };
         if (data.url) {
           setCharacterImageUrl(data.url);
+          const cached = loadLastReveal();
+          if (cached && cached.character.name === char.name) {
+            saveLastReveal({ ...cached, imageUrl: data.url });
+          }
         }
       } catch {
         // Image generation is best-effort — never block the reveal flow.
@@ -365,7 +417,7 @@ export function useAdventure(): UseAdventureResult {
       setError(null);
       setStreamingText("");
 
-      const sceneNumber = currentAdventure.scenes.length + 1;
+      const sceneNumber = nextSceneNumber(currentAdventure);
       const prompt = buildScenePrompt(
         currentAdventure,
         sceneNumber,
@@ -381,21 +433,48 @@ export function useAdventure(): UseAdventureResult {
       }
 
       const forcedClosing = sceneNumber >= MAX_SCENES;
-      const scene: Scene = {
-        sceneNumber,
-        text: parsed.text,
-        choices: parsed.choices,
-        closing: forcedClosing ? true : parsed.closing,
-        summary: parsed.summary || `Scene ${sceneNumber} completed.`,
-        fromChoice: previousChoice,
-      };
+      const isFirstScene = !currentAdventure.committed;
 
-      const nextAdventure: AdventureState = {
-        ...currentAdventure,
-        scenes: [...currentAdventure.scenes, scene],
-        ended: forcedClosing ? true : parsed.closing,
-        endedBy: forcedClosing || parsed.closing ? "model" : null,
-      };
+      let nextAdventure: AdventureState;
+      if (isFirstScene) {
+        // Overwrite the empty root node in place with the first scene's content
+        const rootId = currentAdventure.tree.rootId;
+        const replacedTree: SceneTree = {
+          ...currentAdventure.tree,
+          nodes: {
+            ...currentAdventure.tree.nodes,
+            [rootId]: {
+              ...currentAdventure.tree.nodes[rootId],
+              prose: parsed.text,
+              choices: parsed.choices,
+              closing: forcedClosing ? true : parsed.closing,
+              summary: parsed.summary || `Scene 1`,
+              fromChoice: previousChoice,
+            },
+          },
+        };
+        nextAdventure = {
+          ...currentAdventure,
+          tree: replacedTree,
+          committed: true,
+          ended: forcedClosing ? true : parsed.closing,
+          endedBy: forcedClosing || parsed.closing ? "model" : null,
+        };
+      } else {
+        const scene: Scene = {
+          sceneNumber,
+          text: parsed.text,
+          choices: parsed.choices,
+          closing: forcedClosing ? true : parsed.closing,
+          summary: parsed.summary || `Scene ${sceneNumber} completed.`,
+          fromChoice: previousChoice,
+        };
+        nextAdventure = {
+          ...withSceneAppended(currentAdventure, generateId(), previousChoice, scene),
+          ended: forcedClosing ? true : parsed.closing,
+          endedBy: forcedClosing || parsed.closing ? "model" : null,
+        };
+      }
 
       setAdventure(nextAdventure);
       saveAdventure(nextAdventure);
@@ -415,10 +494,9 @@ export function useAdventure(): UseAdventureResult {
     setPhase("questionnaire");
   }, []);
 
-  const generateCandidatePortrait = useCallback(
-    async (option: CandidateOption) => {
+  const generateCanonPortrait = useCallback(
+    async (c: CanonCharacter) => {
       try {
-        const c = option.character;
         const portraitPrompt = `Genshin Impact official character portrait of ${c.nameEn}, anime illustration style, ${c.vision} vision wielder from ${c.nation}, using a ${c.weapon}, upper body, dramatic lighting. No text, no words, no letters, no watermarks, no signatures, no captions in the image.`;
         const response = await fetch("/api/imagine", {
           method: "POST",
@@ -430,12 +508,11 @@ export function useAdventure(): UseAdventureResult {
         }
         const data = (await response.json()) as { url?: string };
         if (data.url) {
-          setCandidates((current) => {
-            if (!current) return current;
-            return current.map((existing) =>
-              existing.character.id === c.id ? { ...existing, imageUrl: data.url ?? null } : existing
-            );
-          });
+          setCharacterImageUrl(data.url);
+          const cached = loadLastFatedReveal();
+          if (cached && cached.fatedCharacter.id === c.id) {
+            saveLastFatedReveal({ ...cached, imageUrl: data.url });
+          }
         }
       } catch {
         // best-effort; never blocks
@@ -449,48 +526,82 @@ export function useAdventure(): UseAdventureResult {
       setError(null);
       setStreamingText("");
 
-      const variant = getPromptVariant(promptVariant);
+      // Persist answers immediately so a back-nav can prefill them.
+      saveLastAnswers(answers);
+      setLastAnswers(answers);
 
-      if (variant.capabilities.reveal.kind === "candidates") {
-        setPhase("candidates-generating");
+      const variant = getPromptVariant(promptVariant);
+      const answersHash = hashAnswers(answers);
+
+      if (variant.capabilities.reveal.kind === "fated-with-directions") {
+        // Cache hit: same answers + same variant → skip the LLM call and show the prior pick.
+        const cached = loadLastFatedReveal();
+        if (cached && cached.answersHash === answersHash && cached.variantId === promptVariant) {
+          setFatedCharacter(cached.fatedCharacter);
+          setRevealReason(cached.revealReason);
+          setStoryDirections(cached.directions);
+          setCharacterImageUrl(cached.imageUrl);
+          setCharacter(null);
+          setAdventure(null);
+          setPhase("direction-pick");
+          return;
+        }
+
+        setPhase("directions-generating");
         try {
-          const prefiltered = prefilterRoster(CANON_ROSTER, answers);
-          const allowedIds = new Set(prefiltered.map((c) => c.id));
-          const prompt = buildCandidatesPrompt(answers, prefiltered, language);
+          const fated = pickFatedCharacter(CANON_ROSTER, answers);
+          const prompt = buildFatedRevealPrompt(answers, fated, language);
           const firstRaw = await callJsonModel([{ role: "user", content: prompt }], REVEAL_MAX_TOKENS);
-          let parsed = parseCandidates(firstRaw, allowedIds);
+          let parsed = parseFatedReveal(firstRaw);
 
           if (!parsed.ok) {
             const errorList = parsed.errors.map((e) => `- ${e}`).join("\n");
             const retryPrompt = `${prompt}\n\nYour previous answer had these problems:\n${errorList}\n\nReturn valid JSON only, matching the schema exactly, with all problems above fixed.`;
             const retryRaw = await callJsonModel([{ role: "user", content: retryPrompt }], REVEAL_MAX_TOKENS);
-            parsed = parseCandidates(retryRaw, allowedIds);
+            parsed = parseFatedReveal(retryRaw);
           }
 
           if (!parsed.ok) {
             throw new Error(parsed.errors.join(" | "));
           }
 
-          const options: CandidateOption[] = parsed.candidates.map((entry) => {
-            const character = getCanonCharacter(entry.id);
-            return {
-              character: character!,
-              hook: entry.hook,
-              imageUrl: null,
-            };
-          });
-          setCandidates(options);
-          setPhase("candidate-pick");
+          setFatedCharacter(fated);
+          setRevealReason(parsed.why);
+          setStoryDirections(parsed.directions);
+          setCharacterImageUrl(null);
+          setCharacter(null);
+          setAdventure(null);
+          setPhase("direction-pick");
 
-          for (const option of options) {
-            void generateCandidatePortrait(option);
-          }
+          saveLastFatedReveal({
+            answersHash,
+            variantId: promptVariant,
+            fatedCharacter: fated,
+            revealReason: parsed.why,
+            directions: parsed.directions,
+            imageUrl: null,
+          });
+
+          void generateCanonPortrait(fated);
           return;
         } catch (requestError) {
-          setError(requestError instanceof Error ? requestError.message : "Candidate suggestion failed.");
+          setError(requestError instanceof Error ? requestError.message : "Fated reveal failed.");
           setPhase("questionnaire");
           return;
         }
+      }
+
+      // Single-reveal cache hit
+      const cachedReveal = loadLastReveal();
+      if (cachedReveal && cachedReveal.answersHash === answersHash && cachedReveal.variantId === promptVariant) {
+        const nextAdventure = freshAdventure(cachedReveal.character, promptVariant);
+        setCharacter(cachedReveal.character);
+        setCharacterImageUrl(cachedReveal.imageUrl);
+        setAdventure(nextAdventure);
+        saveAdventure(nextAdventure);
+        setHasSavedAdventure(true);
+        setPhase("reveal-shown");
+        return;
       }
 
       setPhase("revealing");
@@ -513,21 +624,22 @@ export function useAdventure(): UseAdventureResult {
           throw new Error(parsed.errors.join(" | "));
         }
 
-        const nextAdventure: AdventureState = {
-          id: generateId(),
-          character: parsed.character,
-          scenes: [],
-          ended: false,
-          endedBy: null,
-          startedAt: new Date().toISOString(),
-          variantId: promptVariant,
-        };
+        const nextAdventure = freshAdventure(parsed.character, promptVariant);
 
         setCharacter(parsed.character);
+        setCharacterImageUrl(null);
         setAdventure(nextAdventure);
         saveAdventure(nextAdventure);
         setHasSavedAdventure(true);
         setPhase("reveal-shown");
+
+        saveLastReveal({
+          answersHash,
+          variantId: promptVariant,
+          framing,
+          character: parsed.character,
+          imageUrl: null,
+        });
 
         void generateCharacterImage(parsed.character);
       } catch (requestError) {
@@ -535,20 +647,20 @@ export function useAdventure(): UseAdventureResult {
         setPhase("questionnaire");
       }
     },
-    [callJsonModel, generateCharacterImage, generateCandidatePortrait, promptVariant]
+    [callJsonModel, generateCharacterImage, generateCanonPortrait, promptVariant]
   );
 
-  const pickCandidate = useCallback(
+  const pickDirection = useCallback(
     async (id: string, language: Language) => {
-      if (!candidates) {
+      if (!fatedCharacter || !storyDirections || !revealReason) {
         return;
       }
-      const option = candidates.find((o) => o.character.id === id);
-      if (!option) {
+      const direction = storyDirections.find((d) => d.id === id);
+      if (!direction) {
         return;
       }
 
-      const c = option.character;
+      const c = fatedCharacter;
       const archetype = c.archetypeBlurb[language] ?? c.archetypeBlurb.en;
       const bio = c.bioBlurb[language] ?? c.bioBlurb.en;
       const displayName = language === "zh" ? c.nameZh : c.nameEn;
@@ -562,38 +674,34 @@ export function useAdventure(): UseAdventureResult {
         weapon: c.weapon,
         archetype,
         bio,
-        visionStory: option.hook,
+        visionStory: direction.hook,
         constellation: "—",
         signature: "—",
         knownAssociate: "",
-        awakeningHook: option.hook,
+        awakeningHook: direction.hook,
       };
 
-      const nextAdventure: AdventureState = {
-        id: generateId(),
-        character,
-        scenes: [],
-        ended: false,
-        endedBy: null,
-        startedAt: new Date().toISOString(),
-        variantId: promptVariant,
+      const storyDirection: StoryDirection = {
+        id: direction.id,
+        title: direction.title,
+        hook: direction.hook,
       };
+
+      const nextAdventure = freshAdventure(character, promptVariant, { revealReason, storyDirection });
 
       setCharacter(character);
-      setCharacterImageUrl(option.imageUrl);
       setAdventure(nextAdventure);
       saveAdventure(nextAdventure);
       setHasSavedAdventure(true);
-      setCandidates(null);
 
       try {
         await generateScene(nextAdventure, "", language);
       } catch (requestError) {
         setError(requestError instanceof Error ? requestError.message : "Scene generation failed.");
-        setPhase("questionnaire");
+        setPhase("direction-pick");
       }
     },
-    [candidates, generateScene, promptVariant]
+    [fatedCharacter, storyDirections, revealReason, generateScene, promptVariant]
   );
 
   const enterWorld = useCallback(
@@ -601,14 +709,7 @@ export function useAdventure(): UseAdventureResult {
       const currentAdventure =
         adventure ??
         (character
-          ? {
-              id: generateId(),
-              character,
-              scenes: [],
-              ended: false,
-              endedBy: null as "model" | "user" | null,
-              startedAt: new Date().toISOString(),
-            }
+          ? freshAdventure(character, promptVariant)
           : null);
 
       if (!currentAdventure) {
@@ -622,7 +723,7 @@ export function useAdventure(): UseAdventureResult {
         setPhase("reveal-shown");
       }
     },
-    [adventure, character, generateScene]
+    [adventure, character, generateScene, promptVariant]
   );
 
   const chooseChoice = useCallback(
@@ -640,6 +741,15 @@ export function useAdventure(): UseAdventureResult {
     },
     [adventure, generateScene]
   );
+
+  const goBackToQuestionnaire = useCallback(() => {
+    // Returns the user to the questionnaire from a reveal/direction-pick stage,
+    // preserving their last answers for prefill. The reveal/direction caches
+    // remain intact so a same-answer resubmit short-circuits to the cached pick.
+    setError(null);
+    setStreamingText("");
+    setPhase("questionnaire");
+  }, []);
 
   const stopHere = useCallback(() => {
     if (!adventure) {
@@ -663,14 +773,18 @@ export function useAdventure(): UseAdventureResult {
   const startOver = useCallback(() => {
     // Archive the current adventure if it has scenes
     const current = loadAdventure();
-    if (current && current.scenes.length > 0) {
+    if (current && activeScenesOf(current).length > 0) {
       archiveToLibrary(current);
     }
     clearAdventure();
+    clearBackNavCaches();
     setCharacter(null);
     setCharacterImageUrl(null);
     setAdventure(null);
-    setCandidates(null);
+    setFatedCharacter(null);
+    setRevealReason(null);
+    setStoryDirections(null);
+    setLastAnswers(null);
     setStreamingText("");
     setError(null);
     setPhase("idle");
@@ -696,7 +810,7 @@ export function useAdventure(): UseAdventureResult {
 
     // Archive current in-progress adventure if it has content
     const current = loadAdventure();
-    if (current && current.scenes.length > 0 && current.id !== id) {
+    if (current && activeScenesOf(current).length > 0 && current.id !== id) {
       archiveToLibrary(current);
     }
 
@@ -710,7 +824,7 @@ export function useAdventure(): UseAdventureResult {
 
     if (entry.ended) {
       setPhase("ended");
-    } else if (entry.scenes.length > 0) {
+    } else if (activeScenesOf(entry).length > 0) {
       setPhase("scene-shown");
     } else {
       setPhase("reveal-shown");
@@ -731,7 +845,7 @@ export function useAdventure(): UseAdventureResult {
     setHasSavedAdventure(true);
     if (saved.ended) {
       setPhase("ended");
-    } else if (saved.scenes.length > 0) {
+    } else if (activeScenesOf(saved).length > 0) {
       setPhase("scene-shown");
     } else {
       setPhase("reveal-shown");
@@ -768,14 +882,18 @@ export function useAdventure(): UseAdventureResult {
     promptVariant,
     availablePromptVariants,
     questionnaireSchema,
-    candidates,
+    fatedCharacter,
+    revealReason,
+    storyDirections,
+    lastAnswers,
     hasSavedAdventure,
     begin,
     openBookshelf,
     closeBookshelf,
     loadFromLibrary,
     submitQuestionnaire,
-    pickCandidate,
+    pickDirection,
+    goBackToQuestionnaire,
     enterWorld,
     chooseChoice,
     stopHere,

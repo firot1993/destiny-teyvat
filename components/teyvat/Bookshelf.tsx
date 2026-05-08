@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useI18n } from "@/i18n";
 import type { AdventureState } from "@/lib/teyvat/scenes";
+import { activeScenesOf } from "@/lib/teyvat/scenes";
 import type { RevealedCharacter } from "@/lib/teyvat/character";
 import { variantFamily } from "@/lib/teyvat/promptVariants";
 import {
@@ -165,7 +166,7 @@ function StoryCard({ entry, onResume }: { entry: AdventureState; onResume: (id: 
       </div>
       <p style={cardName}>{entry.character.name}</p>
       <p style={cardMeta}>
-        {entry.character.nation} · {entry.character.weapon} · {entry.scenes.length} {t("scene_label").toLowerCase()}{entry.scenes.length !== 1 ? "s" : ""}
+        {entry.character.nation} · {entry.character.weapon} · {activeScenesOf(entry).length} {t("scene_label").toLowerCase()}{activeScenesOf(entry).length !== 1 ? "s" : ""}
       </p>
       <div style={cardBottom}>
         {isUnfinished ? (

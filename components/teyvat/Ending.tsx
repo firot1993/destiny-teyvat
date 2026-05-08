@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AdventureLog } from "@/components/teyvat/AdventureLog";
 import { useI18n } from "@/i18n";
 import type { AdventureState } from "@/lib/teyvat/scenes";
+import { activeScenesOf } from "@/lib/teyvat/scenes";
 import {
   BORDER_SOFT,
   FONT_DISPLAY,
@@ -43,7 +44,7 @@ export function Ending({ state, onNewRun }: Props) {
           </button>
         </div>
       </div>
-      {showLog ? <AdventureLog scenes={state.scenes} onClose={() => setShowLog(false)} /> : null}
+      {showLog ? <AdventureLog scenes={activeScenesOf(state)} onClose={() => setShowLog(false)} /> : null}
     </div>
   );
 }

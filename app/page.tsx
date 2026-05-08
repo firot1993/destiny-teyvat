@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { AdventureLog } from "@/components/teyvat/AdventureLog";
+import { BackButton } from "@/components/teyvat/BackButton";
 import { Bookshelf } from "@/components/teyvat/Bookshelf";
-import { CandidateGallery } from "@/components/teyvat/CandidateGallery";
+import { DirectionPicker } from "@/components/teyvat/DirectionPicker";
 import { Ending } from "@/components/teyvat/Ending";
 import { Questionnaire } from "@/components/teyvat/Questionnaire";
 import { RevealCard } from "@/components/teyvat/RevealCard";
@@ -12,6 +13,7 @@ import { TitleScreen } from "@/components/teyvat/TitleScreen";
 import { useAdventure } from "@/hooks/useAdventure";
 import { useI18n } from "@/i18n";
 import { DEFAULT_PROVIDER, PROVIDERS } from "@/lib/constants";
+import { activeScenesOf } from "@/lib/teyvat/scenes";
 import {
   FONT_DISPLAY,
   INK,
@@ -37,14 +39,18 @@ export default function Page() {
     promptVariant,
     availablePromptVariants,
     questionnaireSchema,
-    candidates,
+    fatedCharacter,
+    revealReason,
+    storyDirections,
+    lastAnswers,
     hasSavedAdventure,
     begin,
     openBookshelf,
     closeBookshelf,
     loadFromLibrary,
     submitQuestionnaire,
-    pickCandidate,
+    pickDirection,
+    goBackToQuestionnaire,
     enterWorld,
     chooseChoice,
     stopHere,
@@ -57,14 +63,15 @@ export default function Page() {
   const [logOpen, setLogOpen] = useState(false);
 
   const theme = character ? themeForVision(character.vision) : null;
-  const scene = adventure?.scenes[adventure.scenes.length - 1] ?? null;
+  const activeScenes = adventure ? activeScenesOf(adventure) : [];
+  const scene = activeScenes[activeScenes.length - 1] ?? null;
   const showSettings =
     phase === "idle" ||
     phase === "bookshelf" ||
     phase === "revealing" ||
     phase === "reveal-shown" ||
-    phase === "candidates-generating" ||
-    phase === "candidate-pick";
+    phase === "directions-generating" ||
+    phase === "direction-pick";
   const showQuota = dailyRemaining !== null && dailyRemaining < 3;
 
   return (
@@ -152,28 +159,41 @@ export default function Page() {
       ) : null}
 
       {phase === "questionnaire" ? (
-        <Questionnaire
-          schema={questionnaireSchema}
-          onComplete={(answers) => void submitQuestionnaire(answers, lang)}
-        />
+        <>
+          <BackButton onBack={startOver} label={t("back_to_title")} />
+          <Questionnaire
+            schema={questionnaireSchema}
+            initialAnswers={lastAnswers}
+            onComplete={(answers) => void submitQuestionnaire(answers, lang)}
+          />
+        </>
       ) : null}
 
-      {phase === "revealing" || phase === "candidates-generating" ? (
+      {phase === "revealing" || phase === "directions-generating" ? (
         <div style={loadingWrap}>
           <div style={loadingGlyph}>✦</div>
           <p style={loadingText}>{t("listening_for_name")}</p>
         </div>
       ) : null}
 
-      {phase === "candidate-pick" && candidates ? (
-        <CandidateGallery
-          candidates={candidates}
-          onPick={(id) => void pickCandidate(id, lang)}
-        />
+      {phase === "direction-pick" && fatedCharacter && revealReason && storyDirections ? (
+        <>
+          <BackButton onBack={goBackToQuestionnaire} label={t("back_to_questions")} />
+          <DirectionPicker
+            character={fatedCharacter}
+            imageUrl={characterImageUrl}
+            revealReason={revealReason}
+            directions={storyDirections}
+            onPick={(id) => void pickDirection(id, lang)}
+          />
+        </>
       ) : null}
 
       {phase === "reveal-shown" && character ? (
-        <RevealCard character={character} imageUrl={characterImageUrl} onAdvance={() => void enterWorld(lang)} />
+        <>
+          <BackButton onBack={goBackToQuestionnaire} label={t("back_to_questions")} />
+          <RevealCard character={character} imageUrl={characterImageUrl} onAdvance={() => void enterWorld(lang)} />
+        </>
       ) : null}
 
       {(phase === "scene-generating" || phase === "scene-shown") && adventure ? (
@@ -189,7 +209,7 @@ export default function Page() {
           />
           {logOpen ? (
             <AdventureLog
-              scenes={adventure.scenes}
+              scenes={activeScenes}
               onClose={() => setLogOpen(false)}
             />
           ) : null}

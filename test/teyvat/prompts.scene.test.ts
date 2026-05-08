@@ -5,6 +5,7 @@ import {
 } from "@/lib/teyvat/prompts";
 import type { RevealedCharacter } from "@/lib/teyvat/character";
 import type { AdventureState } from "@/lib/teyvat/scenes";
+import { createTree } from "@/lib/teyvat/sceneTree";
 
 const CHARACTER: RevealedCharacter = {
   framing: "companion",
@@ -24,16 +25,15 @@ const CHARACTER: RevealedCharacter = {
 const STATE: AdventureState = {
   id: "test-scene-1",
   character: CHARACTER,
-  scenes: [
-    {
-      sceneNumber: 1,
-      text: "She crossed the gate and the cold recognized her.",
-      choices: ["follow the voice", "stay where you are", "turn back into the rain"],
-      closing: false,
-      summary: "Yuna crossed the gate and heard a voice call her name.",
-      fromChoice: "",
-    },
-  ],
+  tree: createTree({
+    id: "n1", parentId: null, depth: 1, choiceTaken: null,
+    prose: "She crossed the gate and the cold recognized her.",
+    choices: ["follow the voice", "stay where you are", "turn back into the rain"],
+    closing: false,
+    summary: "Yuna crossed the gate and heard a voice call her name.",
+    fromChoice: "",
+  }),
+  committed: true,
   ended: false,
   endedBy: null,
   startedAt: "2026-05-05T00:00:00Z",

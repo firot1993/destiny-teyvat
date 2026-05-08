@@ -13,6 +13,7 @@ import {
 import type { TeyvatAnswers } from "@/lib/teyvat/questionnaire";
 import type { RevealedCharacter } from "@/lib/teyvat/character";
 import type { AdventureState } from "@/lib/teyvat/scenes";
+import { createTree } from "@/lib/teyvat/sceneTree";
 
 const ANSWERS: TeyvatAnswers = {
   wakeNotice: "the silence that isn't empty",
@@ -42,7 +43,10 @@ const CHARACTER: RevealedCharacter = {
 const STATE: AdventureState = {
   id: "variant-test",
   character: CHARACTER,
-  scenes: [],
+  tree: createTree({
+    id: "root", parentId: null, depth: 1, choiceTaken: null,
+    prose: "", choices: [], closing: false, summary: "", fromChoice: "",
+  }),
   ended: false,
   endedBy: null,
   startedAt: "2026-05-05T00:00:00Z",

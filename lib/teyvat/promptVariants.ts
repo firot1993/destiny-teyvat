@@ -1,6 +1,6 @@
 import type { Language } from "@/types";
 import type { Framing } from "@/lib/teyvat/character";
-import type { AdventureState } from "@/lib/teyvat/scenes";
+import { activeScenesOf, type AdventureState } from "@/lib/teyvat/scenes";
 import {
   TEYVAT_STEPS,
   type QuestionnaireSchema,
@@ -204,9 +204,9 @@ function buildSceneV1(
   const c = state.character;
   const outputLanguage = languageName(language);
   const storySoFar =
-    state.scenes.length === 0
+    activeScenesOf(state).length === 0
       ? "- No previous scenes yet. This is scene 1."
-      : state.scenes
+      : activeScenesOf(state)
           .map(
             (scene) =>
               `- Scene ${scene.sceneNumber}: ${scene.summary}${scene.fromChoice ? ` | choice made: ${scene.fromChoice}` : ""}`
@@ -328,9 +328,9 @@ function buildSceneV2(
   const c = state.character;
   const outputLanguage = languageName(language);
   const storySoFar =
-    state.scenes.length === 0
+    activeScenesOf(state).length === 0
       ? "(scene 1 — no prior scenes)"
-      : state.scenes
+      : activeScenesOf(state)
           .map(
             (scene) =>
               `${scene.sceneNumber}. ${scene.summary}${scene.fromChoice ? ` (chose: ${scene.fromChoice})` : ""}`
@@ -385,11 +385,12 @@ Output (use these tags in this order):
 /* ------------------------------------------------------------------
  * Variant: v2-wish (wish-fulfillment / 爽文)
  *
- * Casts canonical Genshin characters via the candidates pipeline;
- * the reveal builder here is unused (the candidate-pick step
- * handles selection). The scene builder leans into transmigration
- * framing and 爽文 escalation, anchoring scene 1 on the chosen
- * awakening hook.
+ * Picks one fated canonical Genshin character via the deterministic
+ * prefilter, then runs a single combined call (buildFatedRevealPrompt)
+ * to get a "why" line and 3 distinct story directions. The scene
+ * builder leans into transmigration framing and 爽文 escalation,
+ * anchoring scene 1 on the picked direction's hook and threading the
+ * direction's title/id through every subsequent scene.
  * ------------------------------------------------------------------ */
 
 function buildRevealWish(
@@ -397,7 +398,7 @@ function buildRevealWish(
   _framing: Framing,
   _language: Language
 ): string {
-  // Unused — v2-wish goes through buildCandidatesPrompt + pickCandidate instead.
+  // Unused — v2-wish goes through buildFatedRevealPrompt instead.
   return "";
 }
 
@@ -410,9 +411,9 @@ function buildSceneWish(
   const c = state.character;
   const outputLanguage = languageName(language);
   const storySoFar =
-    state.scenes.length === 0
+    activeScenesOf(state).length === 0
       ? "(scene 1 — the awakening)"
-      : state.scenes
+      : activeScenesOf(state)
           .map(
             (scene) =>
               `${scene.sceneNumber}. ${scene.summary}${scene.fromChoice ? ` (chose: ${scene.fromChoice})` : ""}`
@@ -422,11 +423,17 @@ function buildSceneWish(
     ? `Last choice: ${previousChoice}`
     : "Opening scene — the awakening.";
   const pacing = pacingFor(sceneNumber);
-  const isOpening = state.scenes.length === 0;
+  const isOpening = activeScenesOf(state).length === 0;
   const awakeningBlock =
     isOpening && c.awakeningHook
       ? `\nAwakening hook (anchor scene 1 on this — expand it, do not repeat it verbatim):\n${c.awakeningHook}\n`
       : "";
+  const arcBlock = state.storyDirection
+    ? `\nStory arc (anchor every scene to this — do not abandon the arc):
+- Direction: ${state.storyDirection.title} (id: ${state.storyDirection.id})
+- Opening hook: ${state.storyDirection.hook}
+Keep the arc consistent across all scenes. Subplots may branch, but the through-line must remain this direction.\n`
+    : "";
 
   return `Scene ${sceneNumber} of a wish-fulfillment (爽文) transmigration adventure set in Genshin Impact / Teyvat.
 
@@ -434,7 +441,7 @@ The reader has woken up as ${c.name} with their memories and powers intact. Lean
 
 Character: ${c.name} — ${c.vision} ${c.weapon} from ${c.nation}, ${c.archetype}.
 Bio: ${c.bio}
-${awakeningBlock}
+${awakeningBlock}${arcBlock}
 Story so far:
 ${storySoFar}
 ${fromChoiceLine}
@@ -471,7 +478,7 @@ Output (use these tags in this order):
 
 export type RevealContract =
   | { kind: "single" }
-  | { kind: "candidates"; min: number; max: number };
+  | { kind: "fated-with-directions"; count: number };
 
 export interface PromptVariantCapabilities {
   questionnaire: QuestionnaireSchema;
@@ -535,11 +542,11 @@ export const PROMPT_VARIANTS: PromptVariant[] = [
     id: "v2-wish",
     label: "v2 · wish-fulfillment",
     description:
-      "转生成为雷电将军-style power fantasy. Different questionnaire, picks 3-5 canonical characters, runs a 爽文 transmigration adventure.",
+      "转生成为雷电将军-style power fantasy. Picks one fated canon character with a 'why', then offers 3 distinct story directions for the awakening.",
     weight: 0,
     capabilities: {
       questionnaire: wishQuestionnaire,
-      reveal: { kind: "candidates", min: 3, max: 5 },
+      reveal: { kind: "fated-with-directions", count: 3 },
       framing: "transmigration",
       sceneTone: "wish-fulfillment",
     },

@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAdventure } from "@/hooks/useAdventure";
 import { ADVENTURE_STORAGE_KEY } from "@/lib/constants";
+import { activeScenesOf } from "@/lib/teyvat/scenes";
 
 const REVEAL_JSON = JSON.stringify({
   name: "Yuna",
@@ -121,8 +122,8 @@ describe("useAdventure", () => {
     });
 
     expect(result.current.phase).toBe("scene-shown");
-    expect(result.current.adventure?.scenes).toHaveLength(1);
-    expect(result.current.adventure?.scenes[0].choices).toEqual([
+    expect(activeScenesOf(result.current.adventure!)).toHaveLength(1);
+    expect(activeScenesOf(result.current.adventure!)[0].choices).toEqual([
       "follow the voice",
       "stay where you are",
       "turn back",
@@ -195,6 +196,6 @@ describe("useAdventure", () => {
     });
 
     expect(result.current.phase).toBe("scene-shown");
-    expect(result.current.adventure?.scenes).toHaveLength(1);
+    expect(activeScenesOf(result.current.adventure!)).toHaveLength(1);
   });
 });

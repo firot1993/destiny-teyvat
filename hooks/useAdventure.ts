@@ -51,7 +51,22 @@ import type { Framing, RevealedCharacter } from "@/lib/teyvat/character";
 import type { QuestionnaireSchema, TeyvatAnswers } from "@/lib/teyvat/questionnaire";
 import type { AdventureState, Scene, StoryDirection } from "@/lib/teyvat/scenes";
 import { activeScenesOf, nextSceneNumber, withSceneAppended } from "@/lib/teyvat/scenes";
-import { createTree, type SceneTree } from "@/lib/teyvat/sceneTree";
+import {
+  childrenOf,
+  createTree,
+  findChildByChoice,
+  forkAt,
+  switchSibling,
+  type SceneNode,
+  type SceneTree,
+} from "@/lib/teyvat/sceneTree";
+
+export interface SiblingInfo {
+  branchCount: number;
+  activeIndex: number;
+  activeChoiceLabel: string;
+  siblings: SceneNode[];
+}
 
 export type AdventurePhase =
   | "idle"
@@ -107,6 +122,10 @@ export interface UseAdventureResult {
   scrollToStageDelta(delta: number): void;
   /** Returns already-taken sibling choices at `sceneDepth` (Phase 5 will implement; returns [] for now). */
   takenChoicesAt(sceneDepth: number): string[];
+  /** Returns sibling branch info for BranchPager at `sceneNumber`. */
+  siblingsAt(sceneNumber: number): SiblingInfo;
+  /** Switch the active path to a specific sibling node without LLM call. */
+  switchToSibling(targetNodeId: string): void;
   begin(): void;
   openBookshelf(): void;
   closeBookshelf(): void;
@@ -115,7 +134,7 @@ export interface UseAdventureResult {
   pickDirection(id: string, language: Language): Promise<void>;
   goBackToQuestionnaire(): void;
   enterWorld(language: Language): Promise<void>;
-  chooseChoice(choice: string, language: Language): Promise<void>;
+  chooseChoice(choice: string, sceneDepth: number, language: Language): Promise<void>;
   stopHere(): void;
   startOver(): void;
   resumeAdventure(): boolean;
@@ -437,28 +456,33 @@ export function useAdventure(): UseAdventureResult {
     [model, provider, updateQuotaHeaders]
   );
 
+  const generateSceneCore = useCallback(
+    async (state: AdventureState, choice: string, language: Language) => {
+      const sceneNumber = nextSceneNumber(state);
+      const prompt = buildScenePrompt(state, sceneNumber, choice, language, promptVariant);
+      const raw = await streamScene([{ role: "user", content: prompt }], SCENE_MAX_TOKENS);
+      const parsed = parseSceneStream(raw);
+      if (!parsed.text.trim()) {
+        throw new Error("Scene generation returned no scene text.");
+      }
+      const forcedClosing = sceneNumber >= MAX_SCENES;
+      return { parsed, sceneNumber, forcedClosing };
+    },
+    [streamScene, promptVariant]
+  );
+
   const generateScene = useCallback(
     async (currentAdventure: AdventureState, previousChoice: string, language: Language) => {
       setPhase("scene-generating");
       setError(null);
       setStreamingText("");
 
-      const sceneNumber = nextSceneNumber(currentAdventure);
-      const prompt = buildScenePrompt(
+      const { parsed, sceneNumber, forcedClosing } = await generateSceneCore(
         currentAdventure,
-        sceneNumber,
         previousChoice,
-        language,
-        promptVariant
+        language
       );
-      const raw = await streamScene([{ role: "user", content: prompt }], SCENE_MAX_TOKENS);
-      const parsed = parseSceneStream(raw);
 
-      if (!parsed.text.trim()) {
-        throw new Error("Scene generation returned no scene text.");
-      }
-
-      const forcedClosing = sceneNumber >= MAX_SCENES;
       const isFirstScene = !currentAdventure.committed;
 
       let nextAdventure: AdventureState;
@@ -511,7 +535,7 @@ export function useAdventure(): UseAdventureResult {
       }
       setPhase(nextAdventure.ended ? "ended" : "scene-shown");
     },
-    [streamScene, refreshLibrary, promptVariant]
+    [generateSceneCore, refreshLibrary]
   );
 
   const begin = useCallback(() => {
@@ -752,20 +776,89 @@ export function useAdventure(): UseAdventureResult {
     [adventure, character, generateScene, promptVariant]
   );
 
+  // ── Stage-index + snap-scroll helpers ────────────────────────────────────
+
+  const scrollToStage = useCallback((index: number) => {
+    const doc = docRef.current;
+    if (!doc) return;
+    const stage = doc.querySelectorAll<HTMLElement>("[data-stage]")[index];
+    if (stage) stage.scrollIntoView({ behavior: "smooth", block: "start" });
+    setCurrentStageIndex(index);
+  }, []);
+
+  const scrollToStageDelta = useCallback((delta: number) => {
+    setCurrentStageIndex((prev) => {
+      const next = prev + delta;
+      const doc = docRef.current;
+      if (doc) {
+        const stage = doc.querySelectorAll<HTMLElement>("[data-stage]")[next];
+        if (stage) stage.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      return next;
+    });
+  }, []);
+
   const chooseChoice = useCallback(
-    async (choice: string, language: Language) => {
-      if (!adventure) {
+    async (choice: string, sceneDepth: number, language: Language) => {
+      if (!adventure) return;
+
+      const active = adventure.tree.activePath;
+      const parentId = active[sceneDepth - 1];
+
+      // Check for an existing child for this (parent, choice) pair.
+      const existing = findChildByChoice(adventure.tree, parentId, choice);
+      if (existing) {
+        // Switch siblings — no LLM call needed.
+        setAdventure({ ...adventure, tree: switchSibling(adventure.tree, existing.id) });
+        scrollToStageDelta(1);
         return;
       }
 
+      // Need to fork: generate a new scene branching from this parent.
+      setPhase("scene-generating");
+      setError(null);
+      setStreamingText("");
+      const isLeafFork = sceneDepth >= active.length;
       try {
-        await generateScene(adventure, choice, language);
+        const stub: AdventureState = {
+          ...adventure,
+          tree: { ...adventure.tree, activePath: active.slice(0, sceneDepth) },
+        };
+        const { parsed, sceneNumber, forcedClosing } = await generateSceneCore(stub, choice, language);
+        const node: SceneNode = {
+          id: generateId(),
+          parentId,
+          depth: sceneDepth + 1,
+          choiceTaken: choice,
+          prose: parsed.text,
+          choices: parsed.choices,
+          closing: forcedClosing ? true : parsed.closing,
+          summary: parsed.summary || `Scene ${sceneNumber}`,
+          fromChoice: choice,
+        };
+        setAdventure((prev) =>
+          prev
+            ? {
+                ...prev,
+                tree: forkAt(prev.tree, parentId, node),
+                ended: forcedClosing ? true : parsed.closing,
+                endedBy: forcedClosing || parsed.closing ? "model" : null,
+              }
+            : null
+        );
+        if (!isLeafFork) {
+          // Leaf forks are handled by the auto-scroll effect in page.tsx;
+          // non-leaf forks must scroll explicitly.
+          scrollToStageDelta(1);
+        }
       } catch (requestError) {
         setError(requestError instanceof Error ? requestError.message : "Scene generation failed.");
         setPhase("scene-shown");
+        return;
       }
+      setPhase("scene-shown");
     },
-    [adventure, generateScene]
+    [adventure, generateSceneCore, scrollToStageDelta]
   );
 
   const goBackToQuestionnaire = useCallback(() => {
@@ -893,28 +986,6 @@ export function useAdventure(): UseAdventureResult {
     setPromptVariantState(nextVariant);
   }, []);
 
-  // ── Stage-index + snap-scroll helpers ────────────────────────────────────
-
-  const scrollToStage = useCallback((index: number) => {
-    const doc = docRef.current;
-    if (!doc) return;
-    const stage = doc.querySelectorAll<HTMLElement>("[data-stage]")[index];
-    if (stage) stage.scrollIntoView({ behavior: "smooth", block: "start" });
-    setCurrentStageIndex(index);
-  }, []);
-
-  const scrollToStageDelta = useCallback((delta: number) => {
-    setCurrentStageIndex((prev) => {
-      const next = prev + delta;
-      const doc = docRef.current;
-      if (doc) {
-        const stage = doc.querySelectorAll<HTMLElement>("[data-stage]")[next];
-        if (stage) stage.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-      return next;
-    });
-  }, []);
-
   const updateAnswer = useCallback((stepId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [stepId]: value }));
   }, []);
@@ -926,9 +997,41 @@ export function useAdventure(): UseAdventureResult {
     [answers, submitQuestionnaire]
   );
 
-  const takenChoicesAt = useCallback((_sceneDepth: number): string[] => {
-    // Phase 5 will implement branching; linear path for now.
-    return [];
+  const takenChoicesAt = useCallback(
+    (sceneNumber: number): string[] => {
+      if (!adventure) return [];
+      const node = adventure.tree.nodes[adventure.tree.activePath[sceneNumber - 1]];
+      if (!node) return [];
+      return childrenOf(adventure.tree, node.id)
+        .map((c) => c.choiceTaken!)
+        .filter(Boolean);
+    },
+    [adventure]
+  );
+
+  const siblingsAt = useCallback(
+    (sceneNumber: number): SiblingInfo => {
+      if (!adventure)
+        return { branchCount: 0, activeIndex: 0, activeChoiceLabel: "", siblings: [] };
+      const node = adventure.tree.nodes[adventure.tree.activePath[sceneNumber - 1]];
+      if (!node || !node.parentId)
+        return { branchCount: 1, activeIndex: 0, activeChoiceLabel: "", siblings: node ? [node] : [] };
+      const sibs = childrenOf(adventure.tree, node.parentId);
+      const activeIndex = sibs.findIndex((s) => s.id === node.id);
+      return {
+        branchCount: sibs.length,
+        activeIndex,
+        activeChoiceLabel: node.choiceTaken ?? "",
+        siblings: sibs,
+      };
+    },
+    [adventure]
+  );
+
+  const switchToSibling = useCallback((targetNodeId: string) => {
+    setAdventure((prev) =>
+      prev ? { ...prev, tree: switchSibling(prev.tree, targetNodeId) } : null
+    );
   }, []);
 
   // Derived state (no extra React state required)
@@ -970,6 +1073,8 @@ export function useAdventure(): UseAdventureResult {
     scrollToStage,
     scrollToStageDelta,
     takenChoicesAt,
+    siblingsAt,
+    switchToSibling,
     begin,
     openBookshelf,
     closeBookshelf,

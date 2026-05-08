@@ -198,4 +198,107 @@ describe("useAdventure", () => {
     expect(result.current.phase).toBe("scene-shown");
     expect(activeScenesOf(result.current.adventure!)).toHaveLength(1);
   });
+
+  it("forks a new sibling when user picks a different choice on a past scene", async () => {
+    const scene2aText = `<scene>She moved forward.</scene>
+<choices>
+push deeper
+retreat slowly
+</choices>
+<closing>false</closing>
+<summary>She advanced.</summary>`;
+
+    const scene2bText = `<scene>She turned back.</scene>
+<choices>
+try again
+give up
+</choices>
+<closing>false</closing>
+<summary>She retreated.</summary>`;
+
+    mockFetchSequence([
+      jsonResponse({ content: [{ type: "text", text: REVEAL_JSON }] }),
+      jsonResponse({ content: [{ type: "text", text: SCENE_TEXT }] }),
+      jsonResponse({ content: [{ type: "text", text: scene2aText }] }),
+      jsonResponse({ content: [{ type: "text", text: scene2bText }] }),
+    ]);
+
+    const { result } = renderHook(() => useAdventure());
+
+    await act(async () => { await result.current.submitQuestionnaire(ANSWERS, "en"); });
+    await act(async () => { await result.current.enterWorld("en"); });
+
+    // Pick a choice on scene 1 → scene 2a generated
+    await act(async () => {
+      await result.current.chooseChoice("follow the voice", 1, "en");
+    });
+
+    expect(activeScenesOf(result.current.adventure!)).toHaveLength(2);
+    expect(activeScenesOf(result.current.adventure!)[1].text).toContain("She moved forward.");
+
+    // Pick a DIFFERENT choice on scene 1 → scene 2b forked
+    await act(async () => {
+      await result.current.chooseChoice("stay where you are", 1, "en");
+    });
+
+    const scenes = activeScenesOf(result.current.adventure!);
+    expect(scenes).toHaveLength(2);
+    expect(scenes[1].text).toContain("She turned back.");
+
+    // Tree now has 3 nodes (root + scene2a + scene2b)
+    const nodeCount = Object.keys(result.current.adventure!.tree.nodes).length;
+    expect(nodeCount).toBe(3);
+
+    // Both choices show up as taken on scene 1
+    expect(result.current.takenChoicesAt(1)).toContain("follow the voice");
+    expect(result.current.takenChoicesAt(1)).toContain("stay where you are");
+  });
+
+  it("switches to existing sibling when user picks a choice that already spawned one", async () => {
+    const scene2aText = `<scene>She moved forward.</scene>
+<choices>
+push deeper
+retreat slowly
+</choices>
+<closing>false</closing>
+<summary>She advanced.</summary>`;
+
+    mockFetchSequence([
+      jsonResponse({ content: [{ type: "text", text: REVEAL_JSON }] }),
+      jsonResponse({ content: [{ type: "text", text: SCENE_TEXT }] }),
+      jsonResponse({ content: [{ type: "text", text: scene2aText }] }),
+    ]);
+
+    const { result } = renderHook(() => useAdventure());
+
+    await act(async () => { await result.current.submitQuestionnaire(ANSWERS, "en"); });
+    await act(async () => { await result.current.enterWorld("en"); });
+
+    // Generate scene 2a for the first time
+    await act(async () => {
+      await result.current.chooseChoice("follow the voice", 1, "en");
+    });
+
+    // Override fetch — the next call should NOT make an LLM request
+    vi.spyOn(global, "fetch").mockImplementation(async (input) => {
+      const url = typeof input === "string" ? input : (input as Request).url;
+      if (url.includes("/api/imagine")) {
+        return new Response(JSON.stringify({ url: null }), { status: 200 });
+      }
+      throw new Error("Should not call fetch when switching to existing sibling");
+    });
+
+    // Pick the same choice again — should switch (no LLM call)
+    await act(async () => {
+      await result.current.chooseChoice("follow the voice", 1, "en");
+    });
+
+    const scenes = activeScenesOf(result.current.adventure!);
+    expect(scenes).toHaveLength(2);
+    expect(scenes[1].text).toContain("She moved forward.");
+
+    // Still only 2 nodes (root + scene2a)
+    const nodeCount = Object.keys(result.current.adventure!.tree.nodes).length;
+    expect(nodeCount).toBe(2);
+  });
 });

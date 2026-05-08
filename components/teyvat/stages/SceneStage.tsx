@@ -1,0 +1,212 @@
+"use client";
+import { StageWrapper } from "./StageWrapper";
+import type { TierPalette } from "@/lib/teyvat/stageTiers";
+import { useI18n } from "@/i18n";
+
+interface Props {
+  palette: TierPalette;
+  sceneNumber: number;
+  prose: string;
+  streamingText: string;
+  streaming: boolean;
+  closing: boolean;
+  choices: string[];
+  /** Already-taken choices from siblings — rendered with filled dot. */
+  takenChoices: string[];
+  visionLabel: string;
+  pickedChoice: string | null;
+  onPickChoice: (choice: string) => void;
+  onStop: () => void;
+}
+
+const ROMAN: Record<number, string> = {
+  1: "I", 2: "II", 3: "III", 4: "IV", 5: "V",
+  6: "VI", 7: "VII", 8: "VIII", 9: "IX", 10: "X",
+};
+
+function toRoman(n: number): string {
+  return ROMAN[n] ?? String(n);
+}
+
+export function SceneStage({
+  palette,
+  sceneNumber,
+  prose,
+  streamingText,
+  streaming,
+  closing,
+  choices,
+  takenChoices,
+  visionLabel: _visionLabel,
+  pickedChoice,
+  onPickChoice,
+  onStop,
+}: Props) {
+  const { t } = useI18n();
+
+  const displayText = streaming ? streamingText : prose;
+  const paragraphs = displayText.split(/\n\n+/).filter(Boolean);
+
+  const scrollUpHint: React.CSSProperties = {
+    position: "absolute",
+    top: 24,
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: 18,
+    color: palette.gold,
+    opacity: 0.3,
+    userSelect: "none",
+  };
+
+  const chevron: React.CSSProperties = {
+    position: "absolute",
+    bottom: 28,
+    left: "50%",
+    transform: "translateX(-50%)",
+    fontSize: 22,
+    color: palette.gold,
+    opacity: 0.4,
+    userSelect: "none",
+  };
+
+  const choiceBtn = (taken: boolean, disabled: boolean): React.CSSProperties => ({
+    display: "block",
+    width: "100%",
+    padding: "13px 20px",
+    background: "transparent",
+    border: `1px solid ${palette.gold}55`,
+    borderRadius: 2,
+    fontFamily: "Georgia, serif",
+    fontSize: 15,
+    letterSpacing: "0.04em",
+    color: disabled ? palette.inkSoft : taken ? palette.accent : palette.ink,
+    cursor: disabled ? "default" : "pointer",
+    textAlign: "left",
+    opacity: disabled ? 0.5 : 1,
+  });
+
+  return (
+    <StageWrapper tier="reading" palette={palette} scrollable>
+      {/* Reading-tier vision washes */}
+      <div style={{
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        background: `radial-gradient(ellipse at 90% 10%, ${palette.accent}0e 0%, transparent 50%),
+                     radial-gradient(ellipse at 10% 90%, ${palette.accent}0a 0%, transparent 45%)`,
+      }} />
+
+      {/* Gold corner marks */}
+      <div style={{ position: "absolute", top: 16, left: 16, width: 18, height: 18, borderTop: `1px solid ${palette.gold}`, borderLeft: `1px solid ${palette.gold}`, opacity: 0.4 }} />
+      <div style={{ position: "absolute", top: 16, right: 16, width: 18, height: 18, borderTop: `1px solid ${palette.gold}`, borderRight: `1px solid ${palette.gold}`, opacity: 0.4 }} />
+      <div style={{ position: "absolute", bottom: 16, left: 16, width: 18, height: 18, borderBottom: `1px solid ${palette.gold}`, borderLeft: `1px solid ${palette.gold}`, opacity: 0.4 }} />
+      <div style={{ position: "absolute", bottom: 16, right: 16, width: 18, height: 18, borderBottom: `1px solid ${palette.gold}`, borderRight: `1px solid ${palette.gold}`, opacity: 0.4 }} />
+
+      <div style={scrollUpHint} aria-hidden>↑</div>
+
+      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 640, display: "flex", flexDirection: "column", gap: 16, paddingTop: 20 }}>
+        {/* Eyebrow */}
+        <p style={{
+          fontFamily: "Georgia, serif",
+          fontSize: 11,
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+          color: palette.gold,
+          margin: 0,
+          textAlign: "center",
+        }}>
+          {t("scene_label")} {toRoman(sceneNumber)}
+        </p>
+
+        {/* Prose */}
+        <div style={{ textAlign: "left" }}>
+          {paragraphs.map((para, i) => (
+            <p key={i} style={{
+              fontFamily: "Georgia, serif",
+              fontSize: 17,
+              lineHeight: 1.78,
+              color: palette.ink,
+              margin: "0 0 16px",
+            }}>
+              {/* First paragraph dropcap */}
+              {i === 0 && para.length > 0 ? (
+                <>
+                  <span style={{
+                    float: "left",
+                    fontSize: 56,
+                    lineHeight: 0.85,
+                    fontFamily: "Georgia, serif",
+                    fontWeight: 400,
+                    color: palette.accent,
+                    marginRight: 4,
+                    marginTop: 4,
+                  }}>
+                    {para[0]}
+                  </span>
+                  {para.slice(1)}
+                </>
+              ) : para}
+            </p>
+          ))}
+
+          {/* Streaming cursor */}
+          {streaming && (
+            <span style={{
+              display: "inline-block",
+              width: 10,
+              height: "1.1em",
+              background: palette.accent,
+              opacity: 0.8,
+              verticalAlign: "text-bottom",
+              animation: "blink 1s step-end infinite",
+            }} />
+          )}
+        </div>
+
+        {/* Choices (after prose, not streaming, not closing) */}
+        {!streaming && !closing && choices.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+            <style>{`@keyframes blink { 0%, 100% { opacity: 0.8 } 50% { opacity: 0 } }`}</style>
+            {choices.map((choice, i) => {
+              const taken = takenChoices.includes(choice);
+              const disabled = pickedChoice !== null && pickedChoice !== choice;
+              return (
+                <button
+                  key={i}
+                  style={choiceBtn(taken, disabled)}
+                  onClick={() => !disabled && onPickChoice(choice)}
+                  disabled={disabled}
+                >
+                  {taken ? <span style={{ color: palette.accent, marginRight: 6 }}>●</span> : null}
+                  {choice}
+                </button>
+              );
+            })}
+
+            <button
+              style={{
+                background: "transparent",
+                border: "none",
+                color: palette.inkSoft,
+                fontFamily: "Georgia, serif",
+                fontSize: 12,
+                letterSpacing: "0.08em",
+                cursor: "pointer",
+                textDecoration: "underline",
+                textDecorationColor: `${palette.gold}66`,
+                marginTop: 8,
+                padding: 0,
+                alignSelf: "center",
+              }}
+              onClick={onStop}
+            >
+              {t("stop_here")}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div style={chevron} aria-hidden>↓</div>
+    </StageWrapper>
+  );
+}

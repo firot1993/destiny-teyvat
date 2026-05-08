@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAdventure } from "@/hooks/useAdventure";
 import { useI18n } from "@/i18n";
 import { DEFAULT_PROVIDER, PROVIDERS } from "@/lib/constants";
@@ -20,6 +20,7 @@ const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 export default function Page() {
   const { t, lang, toggleLang } = useI18n();
   const adv = useAdventure();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Pick the active vision; fall back to Anemo for pre-reveal stages.
   const vision = adv.character?.vision ?? adv.fatedCharacter?.vision ?? "Anemo";
@@ -161,44 +162,57 @@ export default function Page() {
 
   return (
     <main>
-      {/* HUD: lang toggle + settings */}
+      {/* HUD: lang toggle + settings gear */}
       <div style={settingsWrap}>
         <button type="button" style={langButton} onClick={toggleLang}>
           {lang === "en" ? "中文" : "EN"}
         </button>
-        <div style={settingsPanel}>
-          <span style={settingsLabel}>{t("settings")}</span>
-          <label style={settingsField}>
-            <span>{t("provider_label")}</span>
-            <select
-              value={adv.provider}
-              onChange={(e) => adv.setProvider(e.target.value)}
-            >
-              {Object.keys(PROVIDERS).map((k) => (
-                <option key={k} value={k}>{k}</option>
-              ))}
-            </select>
-          </label>
-          <label style={settingsField}>
-            <span>{t("model_label")}</span>
-            <select value={adv.model} onChange={(e) => adv.setModel(e.target.value)}>
-              {(PROVIDERS[adv.provider] ?? PROVIDERS[DEFAULT_PROVIDER]).map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))}
-            </select>
-          </label>
-          <label style={settingsField}>
-            <span>{t("prompt_variant_label")}</span>
-            <select
-              value={adv.promptVariant}
-              onChange={(e) => adv.setPromptVariant(e.target.value)}
-              title={adv.availablePromptVariants.find((v) => v.id === adv.promptVariant)?.description}
-            >
-              {adv.availablePromptVariants.map((v) => (
-                <option key={v.id} value={v.id} title={v.description}>{v.label}</option>
-              ))}
-            </select>
-          </label>
+        <div style={{ position: "relative" }}>
+          <button
+            type="button"
+            style={gearButton}
+            onClick={() => setSettingsOpen((o) => !o)}
+            aria-label="Settings"
+            title="Settings"
+          >
+            ⚙
+          </button>
+          {settingsOpen && (
+            <div style={settingsPanel}>
+              <span style={settingsLabel}>{t("settings")}</span>
+              <label style={settingsField}>
+                <span>{t("provider_label")}</span>
+                <select
+                  value={adv.provider}
+                  onChange={(e) => adv.setProvider(e.target.value)}
+                >
+                  {Object.keys(PROVIDERS).map((k) => (
+                    <option key={k} value={k}>{k}</option>
+                  ))}
+                </select>
+              </label>
+              <label style={settingsField}>
+                <span>{t("model_label")}</span>
+                <select value={adv.model} onChange={(e) => adv.setModel(e.target.value)}>
+                  {(PROVIDERS[adv.provider] ?? PROVIDERS[DEFAULT_PROVIDER]).map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </label>
+              <label style={settingsField}>
+                <span>{t("prompt_variant_label")}</span>
+                <select
+                  value={adv.promptVariant}
+                  onChange={(e) => adv.setPromptVariant(e.target.value)}
+                  title={adv.availablePromptVariants.find((v) => v.id === adv.promptVariant)?.description}
+                >
+                  {adv.availablePromptVariants.map((v) => (
+                    <option key={v.id} value={v.id} title={v.description}>{v.label}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
         </div>
       </div>
 
@@ -259,14 +273,29 @@ const langButton: React.CSSProperties = {
   fontSize: 12,
 };
 
+const gearButton: React.CSSProperties = {
+  border: "1px solid rgba(31,27,21,0.12)",
+  background: "rgba(255,255,255,0.42)",
+  color: INK,
+  padding: "8px 10px",
+  fontSize: 15,
+  cursor: "pointer",
+  lineHeight: 1,
+};
+
 const settingsPanel: React.CSSProperties = {
+  position: "absolute",
+  top: "calc(100% + 6px)",
+  right: 0,
   minWidth: 220,
   padding: 12,
   border: "1px solid rgba(31,27,21,0.12)",
-  background: "rgba(245,236,217,0.92)",
+  background: "rgba(245,236,217,0.96)",
   backdropFilter: "blur(10px)",
   display: "grid",
   gap: 10,
+  zIndex: 30,
+  boxShadow: "0 4px 20px rgba(0,0,0,0.12)",
 };
 
 const settingsLabel: React.CSSProperties = {

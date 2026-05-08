@@ -7,6 +7,7 @@ import {
 } from "@/lib/teyvat/storage";
 import type { AdventureState } from "@/lib/teyvat/scenes";
 import type { RevealedCharacter } from "@/lib/teyvat/character";
+import { createTree } from "@/lib/teyvat/sceneTree";
 
 const baseCharacter: RevealedCharacter = {
   framing: "protagonist",
@@ -23,11 +24,16 @@ const baseCharacter: RevealedCharacter = {
   knownAssociate: "",
 };
 
+const emptyTree = createTree({
+  id: "root", parentId: null, depth: 1, choiceTaken: null,
+  prose: "", choices: [], closing: false, summary: "", fromChoice: "",
+});
+
 function makeAdventure(overrides: Partial<AdventureState> = {}): AdventureState {
   return {
     id: "test-1",
     character: baseCharacter,
-    scenes: [],
+    tree: emptyTree,
     ended: false,
     endedBy: null,
     startedAt: new Date().toISOString(),

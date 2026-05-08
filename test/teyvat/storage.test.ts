@@ -5,6 +5,7 @@ import {
   saveAdventure,
 } from "@/lib/teyvat/storage";
 import type { AdventureState } from "@/lib/teyvat/scenes";
+import { createTree } from "@/lib/teyvat/sceneTree";
 
 const STATE: AdventureState = {
   id: "test-storage-1",
@@ -22,7 +23,10 @@ const STATE: AdventureState = {
     signature: "A blade of ice that remembers the last hand it held.",
     knownAssociate: "",
   },
-  scenes: [],
+  tree: createTree({
+    id: "root", parentId: null, depth: 1, choiceTaken: null,
+    prose: "", choices: [], closing: false, summary: "", fromChoice: "",
+  }),
   ended: false,
   endedBy: null,
   startedAt: "2026-05-05T00:00:00Z",

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import { I18nProvider } from "@/i18n";
 import Page from "@/app/page";
 
@@ -42,5 +43,21 @@ describe("snap-scroll page (smoke)", () => {
     const stageSections = Array.from(container.querySelectorAll("[data-stage] > section")) as HTMLElement[];
     expect(stageSections.length).toBeGreaterThan(1);
     expect(stageSections.every((section) => section.style.background === "transparent")).toBe(true);
+  });
+
+  it("keeps the snap document scrollable while hiding browser scrollbar chrome", () => {
+    const { container } = render(
+      <I18nProvider>
+        <Page />
+      </I18nProvider>
+    );
+
+    const doc = container.querySelector("[data-doc]") as HTMLElement;
+    const css = readFileSync("app/globals.css", "utf8");
+
+    expect(doc.classList.contains("snap-scroll-doc")).toBe(true);
+    expect(doc.style.overflowY).toBe("auto");
+    expect(css).toContain(".snap-scroll-doc::-webkit-scrollbar");
+    expect(css).toContain("scrollbar-width: none");
   });
 });

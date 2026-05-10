@@ -3,7 +3,10 @@
 import { useEffect, useState, type CSSProperties, type RefObject } from "react";
 import type { TierPalette } from "@/lib/teyvat/stageTiers";
 import {
+  advanceStoryScrollProgress,
   computeStoryScrollEffect,
+  computeStoryScrollEffectFromProgress,
+  computeStoryScrollProgress,
   type FallingStarEffect,
   type StoryScrollEffectMetrics,
 } from "@/lib/teyvat/scrollEffect";
@@ -18,6 +21,7 @@ const initialMetrics = computeStoryScrollEffect({
   scrollHeight: 1,
   clientHeight: 1,
 });
+const SETTLE_EPSILON = 0.0015;
 
 export function StoryProgressVeil({ docRef, palette }: Props) {
   const [metrics, setMetrics] = useState<StoryScrollEffectMetrics>(initialMetrics);
@@ -27,6 +31,19 @@ export function StoryProgressVeil({ docRef, palette }: Props) {
     if (!doc) return;
 
     let frame = 0;
+    let lastFrameTime = 0;
+    let targetProgress = computeStoryScrollProgress({
+      scrollTop: doc.scrollTop,
+      scrollHeight: doc.scrollHeight,
+      clientHeight: doc.clientHeight,
+    });
+    let visualProgress = targetProgress;
+    const reducedMotionQuery =
+      typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)")
+        : null;
+    let prefersReducedMotion = reducedMotionQuery?.matches ?? false;
+
     const cancelFrame =
       typeof window.cancelAnimationFrame === "function"
         ? window.cancelAnimationFrame.bind(window)
@@ -36,31 +53,82 @@ export function StoryProgressVeil({ docRef, palette }: Props) {
         ? window.requestAnimationFrame.bind(window)
         : (callback: FrameRequestCallback) => window.setTimeout(() => callback(Date.now()), 16);
 
-    const update = () => {
+    const measureTargetProgress = () =>
+      computeStoryScrollProgress({
+        scrollTop: doc.scrollTop,
+        scrollHeight: doc.scrollHeight,
+        clientHeight: doc.clientHeight,
+      });
+
+    const applyProgress = (progress: number) => {
+      visualProgress = progress;
+      setMetrics(computeStoryScrollEffectFromProgress(progress));
+    };
+
+    const stopFrame = () => {
+      if (frame) cancelFrame(frame);
       frame = 0;
-      const nextScrollTop = doc.scrollTop;
-      setMetrics(
-        computeStoryScrollEffect({
-          scrollTop: nextScrollTop,
-          scrollHeight: doc.scrollHeight,
-          clientHeight: doc.clientHeight,
-        })
-      );
+      lastFrameTime = 0;
     };
 
-    const queueUpdate = () => {
+    const tick = (timestamp: number) => {
+      frame = 0;
+      const deltaMs = lastFrameTime ? timestamp - lastFrameTime : 16;
+      lastFrameTime = timestamp;
+      const nextProgress = prefersReducedMotion
+        ? targetProgress
+        : advanceStoryScrollProgress({
+            currentProgress: visualProgress,
+            targetProgress,
+            deltaMs,
+          });
+
+      applyProgress(nextProgress);
+
+      if (!prefersReducedMotion && Math.abs(targetProgress - nextProgress) > SETTLE_EPSILON) {
+        frame = requestFrame(tick);
+        return;
+      }
+
+      if (Math.abs(targetProgress - nextProgress) > 0) {
+        applyProgress(targetProgress);
+      }
+      lastFrameTime = 0;
+    };
+
+    const startFrame = () => {
       if (frame) return;
-      frame = requestFrame(update);
+      frame = requestFrame(tick);
     };
 
-    update();
-    doc.addEventListener("scroll", queueUpdate, { passive: true });
-    window.addEventListener("resize", queueUpdate);
+    const updateTarget = (snap = false) => {
+      targetProgress = measureTargetProgress();
+
+      if (snap || prefersReducedMotion) {
+        stopFrame();
+        applyProgress(targetProgress);
+        return;
+      }
+
+      startFrame();
+    };
+
+    const handleTargetChange = () => updateTarget();
+    const handleReducedMotionChange = () => {
+      prefersReducedMotion = reducedMotionQuery?.matches ?? false;
+      updateTarget(true);
+    };
+
+    updateTarget(true);
+    doc.addEventListener("scroll", handleTargetChange, { passive: true });
+    window.addEventListener("resize", handleTargetChange);
+    reducedMotionQuery?.addEventListener?.("change", handleReducedMotionChange);
 
     return () => {
-      doc.removeEventListener("scroll", queueUpdate);
-      window.removeEventListener("resize", queueUpdate);
-      if (frame) cancelFrame(frame);
+      doc.removeEventListener("scroll", handleTargetChange);
+      window.removeEventListener("resize", handleTargetChange);
+      reducedMotionQuery?.removeEventListener?.("change", handleReducedMotionChange);
+      stopFrame();
     };
   }, [docRef]);
 
@@ -82,7 +150,7 @@ export function StoryProgressVeil({ docRef, palette }: Props) {
       `linear-gradient(180deg, rgba(255,255,255,0.18), transparent 38%, rgba(31,27,21,0.14))`,
     backdropFilter: `blur(${metrics.blurPx}px) saturate(${1 + metrics.focus * 0.2}) contrast(${0.94 + metrics.focus * 0.12})`,
     WebkitBackdropFilter: `blur(${metrics.blurPx}px) saturate(${1 + metrics.focus * 0.2}) contrast(${0.94 + metrics.focus * 0.12})`,
-    transition: "opacity 180ms cubic-bezier(0.22, 1, 0.36, 1), backdrop-filter 180ms cubic-bezier(0.22, 1, 0.36, 1)",
+    transition: "opacity 260ms cubic-bezier(0.22, 1, 0.36, 1), backdrop-filter 260ms cubic-bezier(0.22, 1, 0.36, 1)",
     maskImage: "radial-gradient(ellipse at center, transparent 0%, transparent 38%, black 72%)",
     WebkitMaskImage: "radial-gradient(ellipse at center, transparent 0%, transparent 38%, black 72%)",
   };
@@ -95,7 +163,7 @@ export function StoryProgressVeil({ docRef, palette }: Props) {
       `radial-gradient(ellipse at 50% ${18 + metrics.progress * 54}%, ${metrics.ambientColor} 0%, transparent 58%), ` +
       `linear-gradient(180deg, transparent 0%, ${metrics.ambientColor} 58%, transparent 100%)`,
     mixBlendMode: "color",
-    transition: "background 180ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms cubic-bezier(0.22, 1, 0.36, 1)",
+    transition: "background 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 260ms cubic-bezier(0.22, 1, 0.36, 1)",
   };
 
   const glintStyle: CSSProperties = {
@@ -136,20 +204,20 @@ export function StoryProgressVeil({ docRef, palette }: Props) {
     transformOrigin: "top",
     background: `linear-gradient(180deg, ${palette.goldBright}, ${palette.accent}, transparent)`,
     boxShadow: `0 0 16px ${palette.accent}55`,
-    transition: "transform 180ms cubic-bezier(0.22, 1, 0.36, 1)",
+    willChange: "transform",
   };
 
   const pulseStyle: CSSProperties = {
     position: "absolute",
     left: "calc(clamp(18px, 4vw, 46px) - 3px)",
-    top: `calc(9vh + ${metrics.progress * 82}vh)`,
+    top: "9vh",
     width: 7,
     height: 7,
     borderRadius: "50%",
     background: palette.goldBright,
     boxShadow: `0 0 18px ${palette.goldBright}, 0 0 28px ${palette.accent}55`,
-    transform: "translateY(-50%)",
-    transition: "top 180ms cubic-bezier(0.22, 1, 0.36, 1)",
+    transform: `translate3d(0, ${metrics.progress * 82}vh, 0) translateY(-50%)`,
+    willChange: "transform",
   };
 
   const fallingStarLayerStyle: CSSProperties = {
@@ -167,7 +235,6 @@ export function StoryProgressVeil({ docRef, palette }: Props) {
     opacity: star.opacity,
     transform: `translate3d(${star.xvw}vw, ${star.yvh}vh, 0) translate(-50%, -50%) rotate(${star.rotationDeg}deg) scale(${star.scale})`,
     transformOrigin: "center",
-    transition: "transform 180ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms cubic-bezier(0.22, 1, 0.36, 1)",
     willChange: "transform, opacity",
   });
 
@@ -201,6 +268,13 @@ export function StoryProgressVeil({ docRef, palette }: Props) {
         @keyframes story-focus-glint {
           0%, 100% { transform: translate3d(-3%, -2%, 0) rotate(0.001deg); }
           50% { transform: translate3d(3%, 2%, 0) rotate(0.001deg); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          [data-testid="story-progress-veil"] * {
+            animation: none !important;
+            transition: none !important;
+          }
         }
       `}</style>
       <div style={ambientStyle} />

@@ -9,6 +9,8 @@ import { useI18n } from "@/i18n";
 interface Props {
   palette: TierPalette;
   sceneNumber: number;
+  scenePageNumber?: number;
+  scenePageCount?: number;
   prose: string;
   streamingText: string;
   streaming: boolean;
@@ -40,6 +42,8 @@ function toRoman(n: number): string {
 export function SceneStage({
   palette,
   sceneNumber,
+  scenePageNumber = 1,
+  scenePageCount = 1,
   prose,
   streamingText,
   streaming,
@@ -74,6 +78,10 @@ export function SceneStage({
 
   const displayText = streaming ? streamingText : prose;
   const paragraphs = displayText.split(/\n\n+/).filter(Boolean);
+  const isPaginatedScene = scenePageCount > 1;
+  const sceneLabel = `${t("scene_label")} ${toRoman(sceneNumber)}${
+    scenePageCount > 1 ? ` · ${scenePageNumber} of ${scenePageCount}` : ""
+  }`;
 
   const scrollUpHint: React.CSSProperties = {
     position: "absolute",
@@ -141,7 +149,7 @@ export function SceneStage({
         />
       )}
 
-      <div style={{ position: "relative", zIndex: 1, width: "100%", maxWidth: 640, display: "flex", flexDirection: "column", gap: 16, paddingTop: 20 }}>
+      <div data-testid="scene-content" style={sceneContentStyle(isPaginatedScene)}>
         {/* Eyebrow */}
         <p style={{
           fontFamily: "Georgia, serif",
@@ -152,7 +160,7 @@ export function SceneStage({
           margin: 0,
           textAlign: "center",
         }}>
-          {t("scene_label")} {toRoman(sceneNumber)}
+          {sceneLabel}
         </p>
 
         {/* Prose */}
@@ -247,4 +255,20 @@ export function SceneStage({
       <div style={chevron} aria-hidden>↓</div>
     </StageWrapper>
   );
+}
+
+function sceneContentStyle(isPaginatedScene: boolean): React.CSSProperties {
+  return {
+    position: "relative",
+    zIndex: 1,
+    width: "100%",
+    maxWidth: 700,
+    minHeight: isPaginatedScene ? "calc(100vh - 230px)" : undefined,
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: isPaginatedScene ? "center" : undefined,
+    gap: 16,
+    paddingTop: isPaginatedScene ? 0 : 20,
+    paddingBottom: isPaginatedScene ? 24 : 0,
+  };
 }

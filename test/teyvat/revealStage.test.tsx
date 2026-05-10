@@ -4,6 +4,7 @@ import { RevealStage } from "@/components/teyvat/stages/RevealStage";
 import { paletteFor } from "@/lib/teyvat/stageTiers";
 import type { CanonCharacter } from "@/lib/teyvat/canonRoster";
 import type { ParsedDirection } from "@/lib/teyvat/candidates";
+import type { RevealedCharacter } from "@/lib/teyvat/character";
 
 const raiden: CanonCharacter = {
   id: "raiden-shogun",
@@ -29,6 +30,21 @@ const directions: ParsedDirection[] = [
   { id: "mercy", title: "Rewrite the Decree", hook: "Mercy becomes another form of power." },
 ];
 
+const lumine: RevealedCharacter = {
+  framing: "protagonist",
+  name: "Lumine",
+  title: "Traveler Between Stars",
+  vision: "Anemo",
+  nation: "wandering",
+  weapon: "sword",
+  archetype: "wanderer",
+  bio: "A traveler stepping through a new threshold.",
+  visionStory: "The wind answers first.",
+  constellation: "Viatrix",
+  signature: "starward",
+  knownAssociate: "",
+};
+
 describe("RevealStage", () => {
   it("uses a balanced split layout for the revealed story state", () => {
     render(
@@ -51,5 +67,28 @@ describe("RevealStage", () => {
     expect(screen.getByTestId("reveal-layout").style.gridTemplateColumns).toContain("minmax");
     expect(screen.getByTestId("reveal-portrait").style.position).toBe("relative");
     expect(screen.getByTestId("reveal-copy").style.textAlign).toBe("left");
+  });
+
+  it("shows immediate progress feedback after walking into the revealed world", () => {
+    render(
+      <RevealStage
+        palette={paletteFor("theatrical", "Anemo")}
+        loading={false}
+        character={lumine}
+        fatedCharacter={null}
+        imageUrl={null}
+        revealReason={null}
+        directions={null}
+        language="en"
+        committed={true}
+        onAdvance={vi.fn()}
+        onCommit={vi.fn()}
+        onPickDirection={vi.fn()}
+        {...({ enteringWorld: true } as { enteringWorld: boolean })}
+      />
+    );
+
+    expect(screen.getByRole("status")).toHaveTextContent(/opening the path/i);
+    expect(screen.getByRole("button", { name: /opening the path/i })).toBeDisabled();
   });
 });

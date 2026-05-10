@@ -4,6 +4,12 @@ export interface StoryScrollEffectInput {
   clientHeight: number;
 }
 
+export interface StoryScrollAdvanceInput {
+  currentProgress: number;
+  targetProgress: number;
+  deltaMs: number;
+}
+
 export interface StoryScrollEffectMetrics {
   progress: number;
   focus: number;
@@ -41,6 +47,9 @@ interface Rgb {
 const OPENING_NIGHT: Rgb = { r: 18, g: 29, b: 54 };
 const MID_STORY_GOLD: Rgb = { r: 61, g: 54, b: 76 };
 const LATE_STORY_NIGHT: Rgb = { r: 20, g: 33, b: 61 };
+const DOWNWARD_SETTLE_MS = 760;
+const UPWARD_SETTLE_MS = 420;
+const MAX_FRAME_DELTA_MS = 50;
 const FALLING_STAR_PATHS = [
   { id: "lead", xStart: 78, xEnd: 24, yStart: 9, yEnd: 90, arc: 6, rotationDeg: 124, length: 124, headSize: 9, opacity: 0.72, scale: 0.82 },
   { id: "upper", xStart: 63, xEnd: 14, yStart: 4, yEnd: 78, arc: -4, rotationDeg: 128, length: 84, headSize: 6, opacity: 0.46, scale: 0.66 },
@@ -99,9 +108,33 @@ function fallingStarsFor(progress: number, eased: number): FallingStarEffect[] {
   }));
 }
 
-export function computeStoryScrollEffect(input: StoryScrollEffectInput): StoryScrollEffectMetrics {
+export function computeStoryScrollProgress(input: StoryScrollEffectInput): number {
   const maxScroll = Math.max(0, input.scrollHeight - input.clientHeight);
-  const progress = maxScroll > 0 ? clamp01(input.scrollTop / maxScroll) : 0;
+  return maxScroll > 0 ? clamp01(input.scrollTop / maxScroll) : 0;
+}
+
+export function advanceStoryScrollProgress(input: StoryScrollAdvanceInput): number {
+  const current = clamp01(input.currentProgress);
+  const target = clamp01(input.targetProgress);
+  const distance = target - current;
+
+  if (Math.abs(distance) <= 0.0005) {
+    return target;
+  }
+
+  const deltaMs = Math.min(MAX_FRAME_DELTA_MS, Math.max(0, Number.isFinite(input.deltaMs) ? input.deltaMs : 0));
+  if (deltaMs === 0) {
+    return current;
+  }
+
+  const settleMs = distance > 0 ? DOWNWARD_SETTLE_MS : UPWARD_SETTLE_MS;
+  const easedStep = 1 - Math.exp(-deltaMs / settleMs);
+
+  return clamp01(current + distance * easedStep);
+}
+
+export function computeStoryScrollEffectFromProgress(progressValue: number): StoryScrollEffectMetrics {
+  const progress = clamp01(progressValue);
   const eased = easeOutCubic(progress);
   const fallingStars = fallingStarsFor(progress, eased);
 
@@ -121,4 +154,8 @@ export function computeStoryScrollEffect(input: StoryScrollEffectInput): StorySc
     fallingStarScale: fallingStars[0].scale,
     fallingStars,
   };
+}
+
+export function computeStoryScrollEffect(input: StoryScrollEffectInput): StoryScrollEffectMetrics {
+  return computeStoryScrollEffectFromProgress(computeStoryScrollProgress(input));
 }

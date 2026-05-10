@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeStoryScrollEffect } from "@/lib/teyvat/scrollEffect";
+import { advanceStoryScrollProgress, computeStoryScrollEffect } from "@/lib/teyvat/scrollEffect";
 
 describe("computeStoryScrollEffect", () => {
   it("starts misted and unresolved at the top of the story", () => {
@@ -88,5 +88,31 @@ describe("computeStoryScrollEffect", () => {
     expect(metrics.blurPx).toBeGreaterThan(0);
     expect(metrics.threadScale).toBeCloseTo(0.04);
     expect(metrics.fallingStarYvh).toBeCloseTo(9);
+  });
+
+  it("eases large downward scroll jumps instead of snapping the overlay to the target", () => {
+    const next = advanceStoryScrollProgress({
+      currentProgress: 0.1,
+      targetProgress: 0.82,
+      deltaMs: 16,
+    });
+
+    expect(next).toBeGreaterThan(0.1);
+    expect(next).toBeLessThan(0.14);
+  });
+
+  it("still settles near the target after sustained animation frames", () => {
+    let progress = 0.1;
+
+    for (let frame = 0; frame < 120; frame += 1) {
+      progress = advanceStoryScrollProgress({
+        currentProgress: progress,
+        targetProgress: 0.82,
+        deltaMs: 16,
+      });
+    }
+
+    expect(progress).toBeGreaterThan(0.76);
+    expect(progress).toBeLessThanOrEqual(0.82);
   });
 });

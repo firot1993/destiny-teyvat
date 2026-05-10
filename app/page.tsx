@@ -13,6 +13,10 @@ import { EndingStage } from "@/components/teyvat/stages/EndingStage";
 import { Bookshelf } from "@/components/teyvat/Bookshelf";
 import { StoryProgressVeil } from "@/components/teyvat/effects/StoryProgressVeil";
 import { activeScenesOf } from "@/lib/teyvat/scenes";
+import {
+  paginateSceneText,
+  shouldAutoScrollAfterSceneUpdate,
+} from "@/lib/teyvat/scenePagination";
 import { INK, INK_FAINT, PARCHMENT } from "@/lib/teyvat/theme";
 
 export default function Page() {
@@ -32,15 +36,23 @@ export default function Page() {
   const scenes = adv.adventure ? activeScenesOf(adv.adventure) : [];
 
   // Auto-scroll to a newly appended scene.
-  const prevSceneCountRef = useRef(0);
+  const prevSceneProgressRef = useRef({ count: 0, loadingScene: false });
   useEffect(() => {
     const count = scenes.length;
-    if (count > prevSceneCountRef.current && prevSceneCountRef.current > 0) {
+    const previous = prevSceneProgressRef.current;
+    if (
+      shouldAutoScrollAfterSceneUpdate({
+        previousSceneCount: previous.count,
+        currentSceneCount: count,
+        wasGeneratingScene: previous.loadingScene,
+        isGeneratingScene: adv.loading.scene,
+      })
+    ) {
       adv.scrollToStageDelta(1);
     }
-    prevSceneCountRef.current = count;
+    prevSceneProgressRef.current = { count, loadingScene: adv.loading.scene };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scenes.length]);
+  }, [scenes.length, adv.loading.scene]);
 
   // Build the linear list of stages.
   const stages: React.ReactNode[] = [];
@@ -92,6 +104,7 @@ export default function Page() {
       directions={adv.storyDirections}
       language={lang}
       committed={adv.isCommitted}
+      enteringWorld={adv.loading.scene}
       onCommit={() => void adv.commitReveal(lang)}
       onAdvance={() => void adv.enterWorld(lang)}
       onPickDirection={(id) => void adv.pickDirection(id, lang)}
@@ -101,27 +114,33 @@ export default function Page() {
   // 4. Scenes — one stage per active-path scene
   scenes.forEach((scene, idx) => {
     if (idx === 0 && !adv.isCommitted) return; // skip empty root pre-commit
-    const stageIndexHere = stages.length;
-    stages.push(
-      <SceneStage
-        key={`scene-${idx}`}
-        palette={reading}
-        sceneNumber={scene.sceneNumber}
-        prose={scene.text}
-        streamingText={adv.loading.scene && idx === scenes.length - 1 ? adv.streamingText : ""}
-        streaming={adv.loading.scene && idx === scenes.length - 1}
-        closing={scene.closing}
-        choices={scene.choices}
-        takenChoices={adv.takenChoicesAt(scene.sceneNumber)}
-        visionLabel={vision}
-        pickedChoice={null}
-        onPickChoice={(c) => void adv.chooseChoice(c, scene.sceneNumber, lang)}
-        onStop={adv.stopHere}
-        siblings={adv.siblingsAt(scene.sceneNumber)}
-        onSwitchSibling={adv.switchToSibling}
-        isActiveStage={adv.currentStageIndex === stageIndexHere}
-      />
-    );
+    const scenePages = paginateSceneText(scene.text);
+    scenePages.forEach((pageText, pageIndex) => {
+      const isLastPage = pageIndex === scenePages.length - 1;
+      const stageIndexHere = stages.length;
+      stages.push(
+        <SceneStage
+          key={`scene-${idx}-page-${pageIndex}`}
+          palette={reading}
+          sceneNumber={scene.sceneNumber}
+          scenePageNumber={pageIndex + 1}
+          scenePageCount={scenePages.length}
+          prose={pageText}
+          streamingText={adv.loading.scene && idx === scenes.length - 1 && isLastPage ? adv.streamingText : ""}
+          streaming={adv.loading.scene && idx === scenes.length - 1 && isLastPage}
+          closing={isLastPage ? scene.closing : false}
+          choices={isLastPage ? scene.choices : []}
+          takenChoices={adv.takenChoicesAt(scene.sceneNumber)}
+          visionLabel={vision}
+          pickedChoice={null}
+          onPickChoice={(c) => void adv.chooseChoice(c, scene.sceneNumber, lang)}
+          onStop={adv.stopHere}
+          siblings={adv.siblingsAt(scene.sceneNumber)}
+          onSwitchSibling={adv.switchToSibling}
+          isActiveStage={adv.currentStageIndex === stageIndexHere}
+        />
+      );
+    });
   });
 
   // 5. Ending
@@ -210,7 +229,7 @@ export default function Page() {
       <StoryProgressVeil docRef={adv.docRef} palette={reading} />
 
       {/* Snap-scroll document */}
-      <div ref={adv.docRef} data-doc style={docStyle}>
+      <div ref={adv.docRef} data-doc className="snap-scroll-doc" style={docStyle}>
         {stages.map((s, i) => (
           <div key={i} data-stage data-stage-index={i}>
             {s}
@@ -250,7 +269,6 @@ function storySkyStyle(palette: TierPalette): React.CSSProperties {
     zIndex: 0,
     pointerEvents: "none",
     background: palette.ground,
-    backgroundColor: "#08111f",
     transform: "translateZ(0)",
   };
 }

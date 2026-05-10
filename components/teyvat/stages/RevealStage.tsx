@@ -19,6 +19,7 @@ interface Props {
   onPickDirection: (id: string) => void;
   onCommit: () => void;
   committed: boolean;
+  enteringWorld?: boolean;
 }
 
 export function RevealStage({
@@ -34,8 +35,10 @@ export function RevealStage({
   onPickDirection,
   onCommit,
   committed,
+  enteringWorld = false,
 }: Props) {
   const isWish = directions !== null;
+  const enteringWorldLabel = language === "zh" ? "正在打开前路..." : "Opening the path...";
 
   const displayName = isWish
     ? (language === "zh" && fatedCharacter?.nameZh ? fatedCharacter.nameZh : fatedCharacter?.nameEn ?? "")
@@ -60,10 +63,11 @@ export function RevealStage({
     borderRadius: 4,
     padding: "16px 18px",
     background: "rgba(255,255,255,0.04)",
-    cursor: "pointer",
+    cursor: enteringWorld ? "wait" : "pointer",
     textAlign: "left",
     transition: "border-color 220ms cubic-bezier(0.22, 1, 0.36, 1), background 220ms cubic-bezier(0.22, 1, 0.36, 1)",
     width: "100%",
+    opacity: enteringWorld ? 0.58 : 1,
   };
 
   return (
@@ -90,6 +94,24 @@ export function RevealStage({
 
           [data-reveal-meta] {
             justify-content: center !important;
+          }
+        }
+
+        @keyframes revealPathOpen {
+          0% { transform: scaleX(0.18); opacity: 0.32; }
+          50% { transform: scaleX(1); opacity: 0.92; }
+          100% { transform: scaleX(0.18); opacity: 0.32; }
+        }
+
+        @keyframes revealPulseSoft {
+          0%, 100% { opacity: 0.42; transform: translateX(-4px); }
+          50% { opacity: 1; transform: translateX(4px); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          [data-reveal-entry-feedback] * {
+            animation: none !important;
+            transition: none !important;
           }
         }
       `}</style>
@@ -232,7 +254,13 @@ export function RevealStage({
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 10, width: "100%" }}>
                   {directions.map((dir) => (
-                    <button key={dir.id} style={directionCard} onClick={() => onPickDirection(dir.id)}>
+                    <button
+                      key={dir.id}
+                      style={directionCard}
+                      onClick={() => !enteringWorld && onPickDirection(dir.id)}
+                      disabled={enteringWorld}
+                      aria-busy={enteringWorld}
+                    >
                       <p style={{ fontFamily: "Georgia, serif", fontSize: 15, fontWeight: 500, color: palette.ink, margin: "0 0 6px" }}>
                         {dir.title}
                       </p>
@@ -242,17 +270,45 @@ export function RevealStage({
                     </button>
                   ))}
                 </div>
+                {enteringWorld && (
+                  <EntryProgress palette={palette} label={enteringWorldLabel} />
+                )}
               </>
             ) : (
               /* Single-character: advance affordance */
-              <button style={{ ...primaryBtn, marginTop: 16 }} onClick={onAdvance}>
-                Walk into her world ↓
-              </button>
+              <div data-reveal-entry-feedback style={entryFeedbackStyle}>
+                <button
+                  style={{
+                    ...primaryBtn,
+                    marginTop: 16,
+                    cursor: enteringWorld ? "wait" : "pointer",
+                    opacity: enteringWorld ? 0.72 : 1,
+                  }}
+                  onClick={() => !enteringWorld && onAdvance()}
+                  disabled={enteringWorld}
+                  aria-busy={enteringWorld}
+                >
+                  {enteringWorld ? enteringWorldLabel : "Walk into her world ↓"}
+                </button>
+                {enteringWorld && (
+                  <EntryProgress palette={palette} label={enteringWorldLabel} />
+                )}
+              </div>
             )}
           </div>
         </div>
       )}
     </StageWrapper>
+  );
+}
+
+function EntryProgress({ palette, label }: { palette: TierPalette; label: string }) {
+  return (
+    <div role="status" aria-live="polite" style={entryStatusStyle(palette)}>
+      <span style={entryPathLineStyle(palette)} />
+      <span>{label}</span>
+      <span aria-hidden="true" style={entryPulseStyle(palette)}>✦</span>
+    </div>
   );
 }
 
@@ -288,6 +344,47 @@ const revealCopyStyle: React.CSSProperties = {
   minWidth: 0,
   textAlign: "left",
 };
+
+const entryFeedbackStyle: React.CSSProperties = {
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  gap: 12,
+  width: "100%",
+};
+
+function entryStatusStyle(palette: TierPalette): React.CSSProperties {
+  return {
+    width: "min(360px, 100%)",
+    display: "grid",
+    gridTemplateColumns: "minmax(56px, 1fr) auto 18px",
+    alignItems: "center",
+    gap: 10,
+    fontFamily: "Georgia, serif",
+    fontStyle: "italic",
+    fontSize: 13,
+    letterSpacing: "0.08em",
+    color: palette.inkSoft,
+  };
+}
+
+function entryPathLineStyle(palette: TierPalette): React.CSSProperties {
+  return {
+    height: 1,
+    transformOrigin: "left",
+    background: `linear-gradient(90deg, transparent, ${palette.goldBright}, ${palette.accent})`,
+    boxShadow: `0 0 18px ${palette.accent}66`,
+    animation: "revealPathOpen 1.45s cubic-bezier(0.22, 1, 0.36, 1) infinite",
+  };
+}
+
+function entryPulseStyle(palette: TierPalette): React.CSSProperties {
+  return {
+    color: palette.goldBright,
+    textShadow: `0 0 16px ${palette.goldBright}`,
+    animation: "revealPulseSoft 1.2s cubic-bezier(0.22, 1, 0.36, 1) infinite",
+  };
+}
 
 function visionBadgeStyle(palette: TierPalette): React.CSSProperties {
   return {

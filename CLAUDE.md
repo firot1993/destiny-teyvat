@@ -34,7 +34,7 @@ Skip docs for trivial edits and typo-only changes. Prefer updating an existing f
 ### Generation Flow
 
 - `app/page.tsx` is a **snap-scroll document** — a single `overflow-y: scroll; scroll-snap-type: y mandatory` container holding one full-viewport stage per screen. The document grows as new stages are appended; `scrollToStageDelta(±1)` drives programmatic navigation.
-- Stages are built from three visual tiers: `atmospheric` (parchment, title + chapter intros), `reading` (cream, questions + scenes), `theatrical` (deep ink, reveal). Palette tokens come from `lib/teyvat/stageTiers.ts` keyed by the active Vision element.
+- Stages are built from three visual tiers: `atmospheric` (parchment, title + ending), `reading` (cream, questions + scenes), `theatrical` (deep ink, reveal). Palette tokens come from `lib/teyvat/stageTiers.ts` keyed by the active Vision element. Chapter context for each question lives in its eyebrow — there are no dedicated chapter intro stages.
 - `hooks/useAdventure.ts` owns internal phases (`idle -> questionnaire -> revealing | directions-generating -> reveal-shown | direction-pick -> scene-generating -> scene-shown -> ended`) but the UI is not phase-gated — it builds all stages and the document scrolls to the current position.
 - `useAdventure.ts` exposes: `currentStageIndex`, `answers`, `updateAnswer`, `commitReveal`, `enterWorld`, `pickDirection`, `chooseChoice` (with branching), `switchToSibling`, `siblingsAt`, `takenChoicesAt`, `scrollToStageDelta`, and `docRef`.
 - Scene state is a tree (`SceneTree`) — not a flat array. The active path is `SceneTree.activePath`; helper `activeScenesOf(state)` returns it as an ordered array. Branching is first-class: choosing a new option on a past scene forks a new sibling; choosing an existing option switches to that sibling without an LLM call.
@@ -103,8 +103,7 @@ Skip docs for trivial edits and typo-only changes. Prefer updating an existing f
 - [components/teyvat/Bookshelf.tsx](components/teyvat/Bookshelf.tsx) — archived-runs overlay (stories + characters tabs)
 - [components/teyvat/BranchPager.tsx](components/teyvat/BranchPager.tsx) — sibling-branch pager shown above a scene when branches ≥ 2
 - [components/teyvat/stages/TitleStage.tsx](components/teyvat/stages/TitleStage.tsx) — atmospheric-tier title screen stage
-- [components/teyvat/stages/ChapterIntroStage.tsx](components/teyvat/stages/ChapterIntroStage.tsx) — chapter intro divider stage
-- [components/teyvat/stages/QuestionStage.tsx](components/teyvat/stages/QuestionStage.tsx) — single-question stage with seal support
+- [components/teyvat/stages/QuestionStage.tsx](components/teyvat/stages/QuestionStage.tsx) — single-question stage with seal support; chapter context lives in its eyebrow
 - [components/teyvat/stages/RevealStage.tsx](components/teyvat/stages/RevealStage.tsx) — theatrical-tier reveal: loading animation, commit gate, character display, v2-wish directions
 - [components/teyvat/stages/SceneStage.tsx](components/teyvat/stages/SceneStage.tsx) — reading-tier scene: prose, streaming cursor (▋), choices, branch pager, arrow-key nav
 - [components/teyvat/stages/EndingStage.tsx](components/teyvat/stages/EndingStage.tsx) — ending screen with replay/new-run actions

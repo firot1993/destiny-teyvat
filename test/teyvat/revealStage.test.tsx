@@ -1,0 +1,55 @@
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { RevealStage } from "@/components/teyvat/stages/RevealStage";
+import { paletteFor } from "@/lib/teyvat/stageTiers";
+import type { CanonCharacter } from "@/lib/teyvat/canonRoster";
+import type { ParsedDirection } from "@/lib/teyvat/candidates";
+
+const raiden: CanonCharacter = {
+  id: "raiden-shogun",
+  nameEn: "Raiden Shogun",
+  nameZh: "Raiden Shogun",
+  vision: "Electro",
+  nation: "Inazuma",
+  weapon: "polearm",
+  archetypeTags: ["divine"],
+  archetypeBlurb: { en: "Electro Archon", zh: "Electro Archon" },
+  bioBlurb: { en: "Keeper of eternity.", zh: "Keeper of eternity." },
+  powerFantasyAxes: {
+    dominance: ["divine"],
+    pace: ["patient"],
+    humbleTargets: ["heavens"],
+    rewards: ["transcendence"],
+  },
+};
+
+const directions: ParsedDirection[] = [
+  { id: "throne", title: "Take the Silent Throne", hook: "The palace waits for your command." },
+  { id: "storm", title: "Call Down the Storm", hook: "The sky answers before anyone can kneel." },
+  { id: "mercy", title: "Rewrite the Decree", hook: "Mercy becomes another form of power." },
+];
+
+describe("RevealStage", () => {
+  it("uses a balanced split layout for the revealed story state", () => {
+    render(
+      <RevealStage
+        palette={paletteFor("theatrical", "Electro")}
+        loading={false}
+        character={null}
+        fatedCharacter={raiden}
+        imageUrl="/raiden.png"
+        revealReason="You chose eternity before anyone named it for you."
+        directions={directions}
+        language="en"
+        committed={true}
+        onAdvance={vi.fn()}
+        onCommit={vi.fn()}
+        onPickDirection={vi.fn()}
+      />
+    );
+
+    expect(screen.getByTestId("reveal-layout").style.gridTemplateColumns).toContain("minmax");
+    expect(screen.getByTestId("reveal-portrait").style.position).toBe("relative");
+    expect(screen.getByTestId("reveal-copy").style.textAlign).toBe("left");
+  });
+});

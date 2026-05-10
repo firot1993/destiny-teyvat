@@ -4,18 +4,16 @@ import { useEffect, useRef, useState } from "react";
 import { useAdventure } from "@/hooks/useAdventure";
 import { useI18n } from "@/i18n";
 import { DEFAULT_PROVIDER, PROVIDERS } from "@/lib/constants";
-import { paletteFor } from "@/lib/teyvat/stageTiers";
+import { paletteFor, type TierPalette } from "@/lib/teyvat/stageTiers";
 import { TitleStage } from "@/components/teyvat/stages/TitleStage";
-import { ChapterIntroStage } from "@/components/teyvat/stages/ChapterIntroStage";
 import { QuestionStage } from "@/components/teyvat/stages/QuestionStage";
 import { RevealStage } from "@/components/teyvat/stages/RevealStage";
 import { SceneStage } from "@/components/teyvat/stages/SceneStage";
 import { EndingStage } from "@/components/teyvat/stages/EndingStage";
 import { Bookshelf } from "@/components/teyvat/Bookshelf";
+import { StoryProgressVeil } from "@/components/teyvat/effects/StoryProgressVeil";
 import { activeScenesOf } from "@/lib/teyvat/scenes";
 import { INK, INK_FAINT, PARCHMENT } from "@/lib/teyvat/theme";
-
-const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
 
 export default function Page() {
   const { t, lang, toggleLang } = useI18n();
@@ -60,25 +58,8 @@ export default function Page() {
     />
   );
 
-  // 2. Chapter intros + questions interleaved
-  let lastChapter: string | null = null;
-  let chapterCount = 0;
+  // 2. Questions — chapter context lives in each question's eyebrow
   schema.steps.forEach((step, i) => {
-    if (step.chapter !== lastChapter) {
-      chapterCount += 1;
-      const meta = schema.chapterMeta[step.chapter];
-      stages.push(
-        <ChapterIntroStage
-          key={`ch-${step.chapter}`}
-          palette={atmospheric}
-          chapterEyebrow={`Chapter ${ROMAN[chapterCount - 1] ?? chapterCount}`}
-          chapterTitle={meta.title[lang]}
-          chapterSubtitle={meta.subtitle[lang]}
-          visionLabel={vision}
-        />
-      );
-      lastChapter = step.chapter;
-    }
     stages.push(
       <QuestionStage
         key={step.id}
@@ -162,6 +143,8 @@ export default function Page() {
 
   return (
     <main>
+      <div data-testid="story-sky" aria-hidden="true" style={storySkyStyle(reading)} />
+
       {/* HUD: lang toggle + settings gear */}
       <div style={settingsWrap}>
         <button type="button" style={langButton} onClick={toggleLang}>
@@ -224,6 +207,8 @@ export default function Page() {
         </div>
       )}
 
+      <StoryProgressVeil docRef={adv.docRef} palette={reading} />
+
       {/* Snap-scroll document */}
       <div ref={adv.docRef} data-doc style={docStyle}>
         {stages.map((s, i) => (
@@ -253,7 +238,22 @@ const docStyle: React.CSSProperties = {
   overflowY: "auto",
   scrollSnapType: "y mandatory",
   scrollBehavior: "smooth",
+  position: "relative",
+  zIndex: 1,
+  background: "transparent",
 };
+
+function storySkyStyle(palette: TierPalette): React.CSSProperties {
+  return {
+    position: "fixed",
+    inset: 0,
+    zIndex: 0,
+    pointerEvents: "none",
+    background: palette.ground,
+    backgroundColor: "#08111f",
+    transform: "translateZ(0)",
+  };
+}
 
 const settingsWrap: React.CSSProperties = {
   position: "fixed",

@@ -58,17 +58,42 @@ export function RevealStage({
   const directionCard: React.CSSProperties = {
     border: `1px solid ${palette.goldBright}55`,
     borderRadius: 4,
-    padding: "18px 20px",
+    padding: "16px 18px",
     background: "rgba(255,255,255,0.04)",
     cursor: "pointer",
     textAlign: "left",
-    transition: "border-color 200ms, background 200ms",
-    maxWidth: 320,
+    transition: "border-color 220ms cubic-bezier(0.22, 1, 0.36, 1), background 220ms cubic-bezier(0.22, 1, 0.36, 1)",
     width: "100%",
   };
 
   return (
     <StageWrapper tier="theatrical" palette={palette}>
+      <style>{`
+        @media (max-width: 860px) {
+          [data-reveal-layout] {
+            grid-template-columns: 1fr !important;
+            width: min(560px, calc(100vw - 40px)) !important;
+            min-height: auto !important;
+            gap: 24px !important;
+            padding-block: 24px !important;
+          }
+
+          [data-reveal-portrait] {
+            justify-self: center !important;
+            width: min(260px, 74vw) !important;
+          }
+
+          [data-reveal-copy] {
+            align-items: center !important;
+            text-align: center !important;
+          }
+
+          [data-reveal-meta] {
+            justify-content: center !important;
+          }
+        }
+      `}</style>
+
       {/* Background glow effects */}
       <div style={{
         position: "absolute",
@@ -78,94 +103,77 @@ export function RevealStage({
                      radial-gradient(ellipse at 50% 90%, ${palette.accentDeep}15 0%, transparent 40%)`,
       }} />
 
-      {/* Silhouette / portrait area */}
-      <div style={{
-        position: "absolute",
-        top: 0,
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: 240,
-        height: 360,
-        overflow: "hidden",
-        pointerEvents: "none",
-        opacity: imageUrl ? 1 : 0.3,
-      }}>
-        {imageUrl ? (
-          <img src={imageUrl} alt={displayName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        ) : (
-          <div style={{
-            width: "100%",
-            height: "100%",
-            background: palette.silhouette ?? `linear-gradient(180deg, ${palette.accent} 0%, ${palette.accentDeep} 80%, transparent 100%)`,
-          }} />
-        )}
-      </div>
-
-      {/* Content */}
-      <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 16, marginTop: 200 }}>
-        {/* Vision badge */}
-        <div style={{
-          width: 44,
-          height: 44,
-          borderRadius: "50%",
-          border: `2px solid ${palette.accent}`,
-          boxShadow: `0 0 16px ${palette.accent}60`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: 18,
-          color: palette.accent,
-          background: `${palette.accentDeep}30`,
-          marginBottom: 4,
-        }}>
-          ✦
-        </div>
-
-        {loading ? (
-          <>
-            <p style={{ fontFamily: "Georgia, serif", fontStyle: "italic", color: palette.inkSoft, fontSize: 14, letterSpacing: "0.1em" }}>
-              the wind is listening…
-            </p>
-            <style>{`
-              @keyframes breathe {
-                0%, 100% { opacity: 0.2; transform: scale(1); }
-                50% { opacity: 1; transform: scale(1.4); }
-              }
-            `}</style>
-            <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              {[0, 1, 2].map((i) => (
-                <span key={i} style={{
-                  display: "inline-block",
-                  width: 7,
-                  height: 7,
-                  borderRadius: "50%",
-                  background: palette.accent,
-                  animation: `breathe 1.8s ease-in-out ${i * 0.32}s infinite`,
-                }} />
-              ))}
-            </div>
-          </>
-        ) : !committed && !character && !fatedCharacter ? (
-          /* Commit gate */
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-            <p style={{ fontFamily: "Georgia, serif", fontStyle: "italic", color: palette.inkSoft, fontSize: 15, letterSpacing: "0.06em", maxWidth: 320 }}>
-              The stars have read your answers. Are you ready to learn your fate?
-            </p>
-            <button style={primaryBtn} onClick={onCommit}>
-              Reveal my destiny
-            </button>
+      {loading ? (
+        <div style={centeredRevealContent}>
+          <div style={visionBadgeStyle(palette)}>
+            ✦
           </div>
-        ) : (
-          <>
+          <p style={{ fontFamily: "Georgia, serif", fontStyle: "italic", color: palette.inkSoft, fontSize: 14, letterSpacing: "0.1em" }}>
+            the wind is listening…
+          </p>
+          <style>{`
+            @keyframes breathe {
+              0%, 100% { opacity: 0.2; transform: scale(1); }
+              50% { opacity: 1; transform: scale(1.4); }
+            }
+          `}</style>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            {[0, 1, 2].map((i) => (
+              <span key={i} style={{
+                display: "inline-block",
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: palette.accent,
+                animation: `breathe 1.8s ease-in-out ${i * 0.32}s infinite`,
+              }} />
+            ))}
+          </div>
+        </div>
+      ) : !committed && !character && !fatedCharacter ? (
+        /* Commit gate */
+        <div style={centeredRevealContent}>
+          <div style={visionBadgeStyle(palette)}>
+            ✦
+          </div>
+          <p style={{ fontFamily: "Georgia, serif", fontStyle: "italic", color: palette.inkSoft, fontSize: 15, letterSpacing: "0.06em", maxWidth: 320 }}>
+            The stars have read your answers. Are you ready to learn your fate?
+          </p>
+          <button style={primaryBtn} onClick={onCommit}>
+            Reveal my destiny
+          </button>
+        </div>
+      ) : (
+        <div data-testid="reveal-layout" data-reveal-layout style={revealLayoutStyle}>
+          {/* Silhouette / portrait area */}
+          <div data-testid="reveal-portrait" data-reveal-portrait style={portraitFrameStyle(palette, Boolean(imageUrl))}>
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={displayName}
+                style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top" }}
+              />
+            ) : (
+              <div style={{
+                width: "100%",
+                height: "100%",
+                background: palette.silhouette ?? `linear-gradient(180deg, ${palette.accent} 0%, ${palette.accentDeep} 80%, transparent 100%)`,
+              }} />
+            )}
+          </div>
+
+          {/* Content */}
+          <div data-testid="reveal-copy" data-reveal-copy style={revealCopyStyle}>
             {/* Name + epithet */}
             <h2 style={{
               fontFamily: "Georgia, serif",
-              fontSize: 64,
+              fontSize: "clamp(44px, 5vw, 72px)",
               fontWeight: 300,
-              letterSpacing: "0.06em",
+              letterSpacing: "0.04em",
               color: palette.ink,
               margin: 0,
               lineHeight: 1,
+              textWrap: "balance",
             }}>
               {displayName}
             </h2>
@@ -185,7 +193,7 @@ export function RevealStage({
 
             {/* Nation row */}
             {(character?.nation || fatedCharacter?.nation) && (
-              <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+              <div data-reveal-meta style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 2 }}>
                 {[character?.nation ?? fatedCharacter?.nation, character?.vision ?? fatedCharacter?.vision, character?.weapon ?? fatedCharacter?.weapon]
                   .filter(Boolean)
                   .map((chip) => (
@@ -208,12 +216,12 @@ export function RevealStage({
             {isWish && directions ? (
               <>
                 {revealReason && (
-                  <div style={{ maxWidth: 440, marginTop: 12 }}>
+                  <div style={{ maxWidth: 560, marginTop: 8 }}>
                     <p style={{
                       fontFamily: "Georgia, serif",
                       fontStyle: "italic",
-                      fontSize: 14,
-                      lineHeight: 1.7,
+                      fontSize: 15,
+                      lineHeight: 1.75,
                       color: palette.inkSoft,
                       margin: 0,
                     }}>
@@ -222,7 +230,7 @@ export function RevealStage({
                   </div>
                 )}
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16, width: "100%", alignItems: "center" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 10, width: "100%" }}>
                   {directions.map((dir) => (
                     <button key={dir.id} style={directionCard} onClick={() => onPickDirection(dir.id)}>
                       <p style={{ fontFamily: "Georgia, serif", fontSize: 15, fontWeight: 500, color: palette.ink, margin: "0 0 6px" }}>
@@ -241,9 +249,74 @@ export function RevealStage({
                 Walk into her world ↓
               </button>
             )}
-          </>
-        )}
-      </div>
+          </div>
+        </div>
+      )}
     </StageWrapper>
   );
+}
+
+const centeredRevealContent: React.CSSProperties = {
+  position: "relative",
+  zIndex: 1,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  gap: 16,
+};
+
+const revealLayoutStyle: React.CSSProperties = {
+  position: "relative",
+  zIndex: 1,
+  width: "min(1120px, calc(100vw - 72px))",
+  minHeight: "min(680px, calc(100vh - 140px))",
+  display: "grid",
+  gridTemplateColumns: "minmax(280px, 0.86fr) minmax(360px, 1fr)",
+  alignItems: "center",
+  gap: "clamp(36px, 5vw, 88px)",
+  textAlign: "left",
+};
+
+const revealCopyStyle: React.CSSProperties = {
+  position: "relative",
+  zIndex: 1,
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "flex-start",
+  gap: 14,
+  maxWidth: 580,
+  minWidth: 0,
+  textAlign: "left",
+};
+
+function visionBadgeStyle(palette: TierPalette): React.CSSProperties {
+  return {
+    width: 44,
+    height: 44,
+    borderRadius: "50%",
+    border: `2px solid ${palette.accent}`,
+    boxShadow: `0 0 16px ${palette.accent}60`,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: 18,
+    color: palette.accent,
+    background: `${palette.accentDeep}30`,
+    marginBottom: 4,
+  };
+}
+
+function portraitFrameStyle(palette: TierPalette, hasImage: boolean): React.CSSProperties {
+  return {
+    position: "relative",
+    justifySelf: "end",
+    width: "clamp(260px, 27vw, 380px)",
+    aspectRatio: "2 / 3",
+    overflow: "hidden",
+    pointerEvents: "none",
+    opacity: hasImage ? 1 : 0.34,
+    border: `1px solid ${palette.goldBright}2e`,
+    boxShadow: `0 0 70px ${palette.accent}22, inset 0 0 40px ${palette.accentDeep}2f`,
+    background: `${palette.accentDeep}24`,
+  };
 }

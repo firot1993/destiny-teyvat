@@ -14,7 +14,7 @@ interface Props {
 
 export function StageWrapper({ tier, palette, scrollable = false, sealed = false, children }: Props) {
   return (
-    <section style={{
+    <section data-tier={tier} style={{
       minHeight: "100vh",
       scrollSnapAlign: "start",
       scrollSnapStop: "normal",
@@ -26,9 +26,9 @@ export function StageWrapper({ tier, palette, scrollable = false, sealed = false
       padding: scrollable ? "60px 28px 100px" : "60px 28px 80px",
       textAlign: "center",
       overflow: "hidden",
-      background: palette.ground,
+      background: "transparent",
       color: palette.ink,
-      transition: "background 600ms ease, color 400ms ease",
+      transition: "color 400ms cubic-bezier(0.22, 1, 0.36, 1)",
       filter: sealed ? "grayscale(0.4) opacity(0.6)" : undefined,
       pointerEvents: sealed ? "none" : undefined,
     }}>

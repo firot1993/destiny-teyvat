@@ -12,8 +12,8 @@ Destiny is now a Teyvat adventure generator built with Next.js. A short seven-qu
 
 ## Runtime Flow
 
-- `app/page.tsx` is a **snap-scroll document**: a single `overflow-y: scroll; scroll-snap-type: y mandatory` container with one full-viewport stage per screen. All stages (title, chapter intros, questions, reveal, scenes, ending) are built into the document at once; `scrollToStageDelta(±1)` handles programmatic navigation. There is no phase-gated routing — the document grows as the adventure progresses.
-- Stages use three visual tiers from `lib/teyvat/stageTiers.ts`: `atmospheric` (warm parchment — title and chapter intros), `reading` (cream — questions and scenes), `theatrical` (deep ink — reveal). Each tier is palette-tinted by the active Vision element.
+- `app/page.tsx` is a **snap-scroll document**: a single `overflow-y: scroll; scroll-snap-type: y mandatory` container with one full-viewport stage per screen. All stages (title, questions, reveal, scenes, ending) are built into the document at once; `scrollToStageDelta(±1)` handles programmatic navigation. There is no phase-gated routing — the document grows as the adventure progresses.
+- Stages use three visual tiers from `lib/teyvat/stageTiers.ts`: `atmospheric` (warm parchment — title and ending), `reading` (cream — questions and scenes), `theatrical` (deep ink — reveal). Each tier is palette-tinted by the active Vision element. Chapter context for each question lives in its eyebrow (e.g. `Mood · ii of vii`) — there are no dedicated chapter intro stages.
 - `hooks/useAdventure.ts` exposes `currentStageIndex`, `answers`, `updateAnswer`, `commitReveal`, `enterWorld`, `pickDirection`, `chooseChoice` (with first-class branching), `switchToSibling`, `siblingsAt`, `takenChoicesAt`, `scrollToStageDelta`, and `docRef`.
 - Scene state is a **tree** (`SceneTree`) — not a flat array. The active path is `SceneTree.activePath`; `activeScenesOf(state)` returns it as an ordered array. Choosing a new option on a past scene forks a sibling branch; choosing an existing option switches to it without an LLM call. Arrow keys and a pager navigate between siblings.
 - The **reveal is the commit gate**: questionnaire answers are mutable until `commitReveal()` is called. Once committed, the seal is permanent and `isCommitted` drives the `sealed` prop on each question stage.
@@ -31,7 +31,6 @@ Destiny is now a Teyvat adventure generator built with Next.js. A short seven-qu
 ```text
 app/page.tsx  (snap-scroll document)
   ├─ components/teyvat/stages/TitleStage.tsx
-  ├─ components/teyvat/stages/ChapterIntroStage.tsx
   ├─ components/teyvat/stages/QuestionStage.tsx
   ├─ components/teyvat/stages/RevealStage.tsx
   ├─ components/teyvat/stages/SceneStage.tsx
@@ -128,7 +127,7 @@ npm run db:stop
 - `lib/teyvat/candidates.ts` — v2-wish prefilter, deterministic top-1 picker (`pickFatedCharacter`), fated-reveal prompt builder, and response parser (returns `{ why, directions[3] }`)
 - `lib/teyvat/elements.ts` — Vision/nation/weapon enums and element palettes
 - `lib/teyvat/theme.ts` — parchment theme tokens and per-Vision tinting
-- `components/teyvat/stages/` — all snap-scroll stage components (TitleStage, ChapterIntroStage, QuestionStage, RevealStage, SceneStage, EndingStage, StageWrapper)
+- `components/teyvat/stages/` — all snap-scroll stage components (TitleStage, QuestionStage, RevealStage, SceneStage, EndingStage, StageWrapper)
 - `components/teyvat/BranchPager.tsx` — sibling-branch pager shown above a scene when branches ≥ 2
 - `components/teyvat/Bookshelf.tsx` — archived-runs overlay
 - `i18n/index.tsx` — English and Simplified Chinese copy

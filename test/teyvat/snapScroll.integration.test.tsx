@@ -23,5 +23,24 @@ describe("snap-scroll page (smoke)", () => {
 
     // RevealStage commit-gate CTA (before any LLM call)
     expect(screen.getByText(/reveal my destiny/i)).toBeInTheDocument();
+
+    // Story-progress sharpening veil sits above the snap document.
+    expect(screen.getByTestId("story-progress-veil")).toBeInTheDocument();
+  });
+
+  it("anchors one night-sky layer behind transparent snap stages", () => {
+    const { container } = render(
+      <I18nProvider>
+        <Page />
+      </I18nProvider>
+    );
+
+    const sky = screen.getByTestId("story-sky");
+    expect(sky.getAttribute("style")).toContain("rgb(8, 17, 31)");
+    expect(sky.style.position).toBe("fixed");
+
+    const stageSections = Array.from(container.querySelectorAll("[data-stage] > section")) as HTMLElement[];
+    expect(stageSections.length).toBeGreaterThan(1);
+    expect(stageSections.every((section) => section.style.background === "transparent")).toBe(true);
   });
 });

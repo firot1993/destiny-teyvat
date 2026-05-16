@@ -8,6 +8,7 @@ interface Props {
   palette: TierPalette;
   step: TeyvatStep;
   stepNumber: number;
+  answeredCount: number;
   totalSteps: number;
   selectedValue: string | undefined;
   language: Language;
@@ -20,6 +21,7 @@ export function QuestionStage({
   palette,
   step,
   stepNumber,
+  answeredCount,
   totalSteps,
   selectedValue,
   language,
@@ -28,8 +30,19 @@ export function QuestionStage({
   visionLabel: _visionLabel,
 }: Props) {
   const question = step.title[language] ?? step.title.en;
+  const safeAnsweredCount = Math.min(Math.max(answeredCount, 0), totalSteps);
+  const segmentIndices = [...Array(totalSteps).keys()];
+  const chapterLabel = `${stepNumber} of ${totalSteps}`;
 
-  const eyebrow = `${stepNumber} of ${totalSteps}`;
+  const progressTrack: React.CSSProperties = {
+    width: "100%",
+    maxWidth: 360,
+    display: "grid",
+    gridTemplateColumns: `repeat(${totalSteps}, minmax(0, 1fr))`,
+    gap: 6,
+  };
+
+  const fallbackText = `Question ${chapterLabel}. ${safeAnsweredCount} of ${totalSteps} completed.`;
 
   const chevron: React.CSSProperties = {
     position: "absolute",
@@ -98,17 +111,64 @@ export function QuestionStage({
       <div style={scrollUpHint} aria-hidden>↑</div>
 
       <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 20, width: "100%", maxWidth: 560 }}>
-        {/* Eyebrow */}
-        <p style={{
-          fontFamily: "Georgia, serif",
-          fontSize: 11,
-          letterSpacing: "0.22em",
-          textTransform: "uppercase",
-          color: palette.gold,
-          margin: 0,
-        }}>
-          {eyebrow}
-        </p>
+        {/* Progress bar (visual primary signal) */}
+        <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+          <div
+            role="progressbar"
+            aria-label={fallbackText}
+            aria-valuemin={0}
+            aria-valuemax={totalSteps}
+            aria-valuenow={safeAnsweredCount}
+            style={progressTrack}
+          >
+            {segmentIndices.map((index) => {
+              const isFilled = index < safeAnsweredCount;
+              const isCurrent = index === stepNumber - 1;
+              const segmentStyle: React.CSSProperties = {
+                position: "relative",
+                height: 4,
+                borderRadius: 3,
+                border: `1px solid ${isFilled ? palette.accent : (isCurrent ? palette.gold : `${palette.gold}66`)}`,
+                background: isFilled ? palette.accent : "transparent",
+                transition: "background-color 240ms ease, border-color 240ms ease",
+                boxSizing: "border-box",
+              };
+              const indexLabelStyle: React.CSSProperties = {
+                position: "absolute",
+                top: 8,
+                left: "50%",
+                transform: "translateX(-50%)",
+                fontFamily: "Georgia, serif",
+                fontSize: 10,
+                letterSpacing: "0.16em",
+                color: isFilled ? palette.accent : palette.gold,
+                opacity: isCurrent ? 1 : 0.8,
+                whiteSpace: "nowrap",
+              };
+
+              return (
+                <span key={index} style={segmentStyle} aria-hidden>
+                  <span style={indexLabelStyle}>{index + 1}</span>
+                </span>
+              );
+            })}
+          </div>
+
+          {/* Lightweight text fallback for non-visual contexts */}
+          <p style={{
+            position: "absolute",
+            width: 1,
+            height: 1,
+            margin: -1,
+            padding: 0,
+            border: 0,
+            overflow: "hidden",
+            clip: "rect(0,0,0,0)",
+            whiteSpace: "nowrap",
+          }}>
+            {fallbackText}
+          </p>
+        </div>
 
         {/* Question */}
         <h3 style={{

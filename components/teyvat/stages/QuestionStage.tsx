@@ -14,7 +14,7 @@ interface Props {
   language: Language;
   sealed: boolean;
   onPick: (value: string) => void;
-  visionLabel: string;
+  onBack: () => void;
 }
 
 export function QuestionStage({
@@ -27,7 +27,7 @@ export function QuestionStage({
   language,
   sealed,
   onPick,
-  visionLabel: _visionLabel,
+  onBack,
 }: Props) {
   const question = step.title[language] ?? step.title.en;
   const safeAnsweredCount = Math.min(Math.max(answeredCount, 0), totalSteps);
@@ -44,26 +44,32 @@ export function QuestionStage({
 
   const fallbackText = `Question ${chapterLabel}. ${safeAnsweredCount} of ${totalSteps} completed.`;
 
-  const chevron: React.CSSProperties = {
-    position: "absolute",
-    bottom: 28,
+  const chevronBase: React.CSSProperties = {
     left: "50%",
     transform: "translateX(-50%)",
-    fontSize: 22,
+    padding: 0,
+    border: "none",
+    background: "transparent",
     color: palette.gold,
-    opacity: 0.4,
+    lineHeight: 1,
     userSelect: "none",
   };
 
   const scrollUpHint: React.CSSProperties = {
+    ...chevronBase,
     position: "absolute",
     top: 24,
-    left: "50%",
-    transform: "translateX(-50%)",
     fontSize: 18,
-    color: palette.gold,
-    opacity: 0.3,
-    userSelect: "none",
+    opacity: 0.5,
+    cursor: "pointer",
+  };
+
+  const chevron: React.CSSProperties = {
+    ...chevronBase,
+    position: "absolute",
+    bottom: 28,
+    fontSize: 22,
+    opacity: 0.5,
   };
 
   const optionBase: React.CSSProperties = {
@@ -108,7 +114,14 @@ export function QuestionStage({
       <div style={{ position: "absolute", bottom: 16, left: 16, width: 18, height: 18, borderBottom: `1px solid ${palette.gold}`, borderLeft: `1px solid ${palette.gold}`, opacity: 0.5 }} />
       <div style={{ position: "absolute", bottom: 16, right: 16, width: 18, height: 18, borderBottom: `1px solid ${palette.gold}`, borderRight: `1px solid ${palette.gold}`, opacity: 0.5 }} />
 
-      <div style={scrollUpHint} aria-hidden>↑</div>
+      <button
+        type="button"
+        style={scrollUpHint}
+        onClick={onBack}
+        aria-label="Go back one stage"
+      >
+        ↑
+      </button>
 
       <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 20, width: "100%", maxWidth: 560 }}>
         {/* Progress bar (visual primary signal) */}

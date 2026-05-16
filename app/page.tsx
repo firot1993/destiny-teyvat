@@ -90,7 +90,7 @@ export default function Page() {
           adv.updateAnswer(step.id, value);
           adv.scrollToStageDelta(1);
         }}
-        visionLabel={vision}
+        onBack={() => adv.scrollToStageDelta(-1)}
       />
     );
   });

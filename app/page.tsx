@@ -75,6 +75,7 @@ export default function Page() {
 
   // 2. Questions — chapter context lives in each question's eyebrow
   schema.steps.forEach((step, i) => {
+    const questionStageIndex = stages.length;
     stages.push(
       <QuestionStage
         key={step.id}
@@ -86,6 +87,7 @@ export default function Page() {
         selectedValue={adv.answers[step.id]}
         language={lang}
         sealed={sealed}
+        isActiveStage={adv.currentStageIndex === questionStageIndex}
         onPick={(value) => {
           adv.updateAnswer(step.id, value);
           adv.scrollToStageDelta(1);

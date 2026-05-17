@@ -1,4 +1,5 @@
 "use client";
+import { type CSSProperties, useEffect, useState } from "react";
 import { StageWrapper } from "./StageWrapper";
 import type { TierPalette } from "@/lib/teyvat/stageTiers";
 import type { TeyvatStep } from "@/lib/teyvat/questionnaire";
@@ -13,6 +14,7 @@ interface Props {
   selectedValue: string | undefined;
   language: Language;
   sealed: boolean;
+  isActiveStage: boolean;
   onPick: (value: string) => void;
   onBack: () => void;
 }
@@ -26,6 +28,7 @@ export function QuestionStage({
   selectedValue,
   language,
   sealed,
+  isActiveStage,
   onPick,
   onBack,
 }: Props) {
@@ -33,8 +36,46 @@ export function QuestionStage({
   const safeAnsweredCount = Math.min(Math.max(answeredCount, 0), totalSteps);
   const segmentIndices = [...Array(totalSteps).keys()];
   const chapterLabel = `${stepNumber} of ${totalSteps}`;
+  const [hasBeenActive, setHasBeenActive] = useState(false);
 
-  const progressTrack: React.CSSProperties = {
+  useEffect(() => {
+    if (isActiveStage) {
+      setHasBeenActive(true);
+    }
+  }, [isActiveStage]);
+
+  const isDormant = !hasBeenActive;
+  const dormantRevealStyle: CSSProperties = {
+    opacity: 0,
+    pointerEvents: "none",
+  };
+  const titleRevealStyle: CSSProperties = isActiveStage
+    ? {
+        animation: "fadeIn 200ms ease forwards",
+        opacity: 0,
+      }
+    : isDormant
+      ? dormantRevealStyle
+      : {};
+
+  const optionRevealStyle = (index: number): CSSProperties => {
+    if (isActiveStage) {
+      return {
+        animation: "questionChoiceReveal 300ms ease forwards",
+        animationDelay: `${200 + index * 50}ms`,
+        opacity: 0,
+        transform: "translateY(12px)",
+      };
+    }
+
+    if (isDormant) {
+      return dormantRevealStyle;
+    }
+
+    return {};
+  };
+
+  const progressTrack: CSSProperties = {
     width: "100%",
     maxWidth: 360,
     display: "grid",
@@ -44,7 +85,7 @@ export function QuestionStage({
 
   const fallbackText = `Question ${chapterLabel}. ${safeAnsweredCount} of ${totalSteps} completed.`;
 
-  const chevronBase: React.CSSProperties = {
+  const chevronBase: CSSProperties = {
     left: "50%",
     transform: "translateX(-50%)",
     padding: 0,
@@ -55,7 +96,7 @@ export function QuestionStage({
     userSelect: "none",
   };
 
-  const scrollUpHint: React.CSSProperties = {
+  const scrollUpHint: CSSProperties = {
     ...chevronBase,
     position: "absolute",
     top: 24,
@@ -64,7 +105,7 @@ export function QuestionStage({
     cursor: "pointer",
   };
 
-  const chevron: React.CSSProperties = {
+  const chevron: CSSProperties = {
     ...chevronBase,
     position: "absolute",
     bottom: 28,
@@ -72,7 +113,7 @@ export function QuestionStage({
     opacity: 0.5,
   };
 
-  const optionBase: React.CSSProperties = {
+  const optionBase: CSSProperties = {
     display: "block",
     width: "100%",
     padding: "13px 20px",
@@ -88,7 +129,7 @@ export function QuestionStage({
     transition: "border-color 200ms, color 200ms",
   };
 
-  const optionSelected: React.CSSProperties = {
+  const optionSelected: CSSProperties = {
     ...optionBase,
     color: palette.accent,
     fontStyle: "italic",
@@ -191,19 +232,20 @@ export function QuestionStage({
           color: palette.ink,
           margin: 0,
           lineHeight: 1.3,
+          ...titleRevealStyle,
         }}>
           {question}
         </h3>
 
         {/* Options */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", marginTop: 8 }}>
-          {step.options.map((opt) => {
+          {step.options.map((opt, index) => {
             const label = opt.label[language] ?? opt.label.en;
             const isSelected = selectedValue === opt.value;
             return (
               <button
                 key={opt.id}
-                style={isSelected ? optionSelected : optionBase}
+                style={{ ...(isSelected ? optionSelected : optionBase), ...optionRevealStyle(index) }}
                 onClick={() => onPick(opt.value)}
                 disabled={sealed}
               >

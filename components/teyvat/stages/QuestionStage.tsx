@@ -98,7 +98,7 @@ export function QuestionStage({
   };
 
   return (
-    <StageWrapper tier="reading" palette={palette} sealed={sealed}>
+    <StageWrapper tier="reading" palette={palette} sealed={sealed} snapStop="always">
       {/* Reading-tier vision wash */}
       <div style={{
         position: "absolute",

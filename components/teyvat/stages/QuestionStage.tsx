@@ -1,5 +1,5 @@
 "use client";
-import { type CSSProperties, useEffect, useState } from "react";
+import { type CSSProperties } from "react";
 import { StageWrapper } from "./StageWrapper";
 import type { TierPalette } from "@/lib/teyvat/stageTiers";
 import type { TeyvatStep } from "@/lib/teyvat/questionnaire";
@@ -36,27 +36,13 @@ export function QuestionStage({
   const safeAnsweredCount = Math.min(Math.max(answeredCount, 0), totalSteps);
   const segmentIndices = [...Array(totalSteps).keys()];
   const chapterLabel = `${stepNumber} of ${totalSteps}`;
-  const [hasBeenActive, setHasBeenActive] = useState(false);
 
-  useEffect(() => {
-    if (isActiveStage) {
-      setHasBeenActive(true);
-    }
-  }, [isActiveStage]);
-
-  const isDormant = !hasBeenActive;
-  const dormantRevealStyle: CSSProperties = {
-    opacity: 0,
-    pointerEvents: "none",
-  };
   const titleRevealStyle: CSSProperties = isActiveStage
     ? {
         animation: "fadeIn 200ms ease forwards",
         opacity: 0,
       }
-    : isDormant
-      ? dormantRevealStyle
-      : {};
+    : {};
 
   const optionRevealStyle = (index: number): CSSProperties => {
     if (isActiveStage) {
@@ -66,10 +52,6 @@ export function QuestionStage({
         opacity: 0,
         transform: "translateY(12px)",
       };
-    }
-
-    if (isDormant) {
-      return dormantRevealStyle;
     }
 
     return {};

@@ -10,6 +10,8 @@ import {
 } from "react";
 import type { Language } from "@/types";
 
+type TranslationVars = Record<string, string>;
+
 const translations: Record<string, Record<string, string>> = {
   en: {
     app_title: "Drift Through Teyvat",
@@ -61,6 +63,14 @@ const translations: Record<string, Record<string, string>> = {
     choose_a_direction: "Choose your opening",
     direction_pick_hint: "Three stories are waiting. Pick the one that feels closest to the life you'd live.",
     walk_this_path: "Walk this path →",
+    reveal_loading_copy: "the wind is listening…",
+    reveal_commit_prompt: "The stars have read your answers. Are you ready to learn your fate?",
+    reveal_commit_cta: "Reveal my destiny",
+    reveal_opening_path: "Opening the path...",
+    reveal_walk_into_world: "Walk into {{possessive}} world ↓",
+    reveal_world_possessive_he: "his",
+    reveal_world_possessive_she: "her",
+    reveal_world_possessive_they: "their",
     filter_all: "All",
     filter_editorial: "Editorial",
     filter_wish: "Wish-fulfillment",
@@ -117,6 +127,14 @@ const translations: Record<string, Record<string, string>> = {
     choose_a_direction: "选择你的开端",
     direction_pick_hint: "三种命途已在等候。选那一种最像你愿意去过的人生。",
     walk_this_path: "走上这条路 →",
+    reveal_loading_copy: "风在聆听…",
+    reveal_commit_prompt: "星辰已读懂你的答案。你准备好迎接你的命运了吗？",
+    reveal_commit_cta: "揭示我的命运",
+    reveal_opening_path: "正在打开前路...",
+    reveal_walk_into_world: "走入{{possessive}}世界 ↓",
+    reveal_world_possessive_he: "他的",
+    reveal_world_possessive_she: "她的",
+    reveal_world_possessive_they: "他们的",
     filter_all: "全部",
     filter_editorial: "正传",
     filter_wish: "爽文",
@@ -126,11 +144,19 @@ const translations: Record<string, Record<string, string>> = {
 
 interface I18nContextValue {
   lang: Language;
-  t: (key: string) => string;
+  t: (key: string, vars?: TranslationVars) => string;
   toggleLang: () => void;
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
+const INTERPOLATION_PATTERN = /\{\{\s*(\w+)\s*\}\}/g;
+
+function interpolate(template: string, vars?: TranslationVars): string {
+  if (!vars) {
+    return template;
+  }
+  return template.replace(INTERPOLATION_PATTERN, (match, token) => vars[token] ?? match);
+}
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState<Language>("zh");
@@ -146,7 +172,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback(
-    (key: string) => translations[lang]?.[key] ?? translations["zh"]?.[key] ?? key,
+    (key: string, vars?: TranslationVars) => {
+      const raw = translations[lang]?.[key] ?? translations["zh"]?.[key] ?? key;
+      return interpolate(raw, vars);
+    },
     [lang]
   );
 

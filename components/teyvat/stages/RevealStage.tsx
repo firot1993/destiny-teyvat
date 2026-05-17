@@ -5,6 +5,9 @@ import type { RevealedCharacter } from "@/lib/teyvat/character";
 import type { CanonCharacter } from "@/lib/teyvat/canonRoster";
 import type { ParsedDirection } from "@/lib/teyvat/candidates";
 import type { Language } from "@/types";
+import { useI18n } from "@/i18n";
+
+type RevealPronoun = "he" | "she" | "they";
 
 interface Props {
   palette: TierPalette;
@@ -37,8 +40,14 @@ export function RevealStage({
   committed,
   enteringWorld = false,
 }: Props) {
+  const { t } = useI18n();
   const isWish = directions !== null;
-  const enteringWorldLabel = language === "zh" ? "正在打开前路..." : "Opening the path...";
+  const enteringWorldLabel = t("reveal_opening_path");
+  const commitMessage = t("reveal_commit_prompt");
+  const commitCta = t("reveal_commit_cta");
+  const walkIntoWorldText = t("reveal_walk_into_world", {
+    possessive: t(`reveal_world_possessive_${resolveRevealPronoun({ character, fatedCharacter, language })}`),
+  });
 
   const displayName = isWish
     ? (language === "zh" && fatedCharacter?.nameZh ? fatedCharacter.nameZh : fatedCharacter?.nameEn ?? "")
@@ -131,7 +140,7 @@ export function RevealStage({
             ✦
           </div>
           <p style={{ fontFamily: "Georgia, serif", fontStyle: "italic", color: palette.inkSoft, fontSize: 14, letterSpacing: "0.1em" }}>
-            the wind is listening…
+            {t("reveal_loading_copy")}
           </p>
           <style>{`
             @keyframes breathe {
@@ -159,10 +168,10 @@ export function RevealStage({
             ✦
           </div>
           <p style={{ fontFamily: "Georgia, serif", fontStyle: "italic", color: palette.inkSoft, fontSize: 15, letterSpacing: "0.06em", maxWidth: 320 }}>
-            The stars have read your answers. Are you ready to learn your fate?
+            {commitMessage}
           </p>
           <button style={primaryBtn} onClick={onCommit}>
-            Reveal my destiny
+            {commitCta}
           </button>
         </div>
       ) : (
@@ -288,7 +297,7 @@ export function RevealStage({
                   disabled={enteringWorld}
                   aria-busy={enteringWorld}
                 >
-                  {enteringWorld ? enteringWorldLabel : "Walk into her world ↓"}
+                  {enteringWorld ? enteringWorldLabel : walkIntoWorldText}
                 </button>
                 {enteringWorld && (
                   <EntryProgress palette={palette} label={enteringWorldLabel} />
@@ -300,6 +309,61 @@ export function RevealStage({
       )}
     </StageWrapper>
   );
+}
+
+function resolveRevealPronoun({
+  character,
+  fatedCharacter,
+  language,
+}: {
+  character: RevealedCharacter | null;
+  fatedCharacter: CanonCharacter | null;
+  language: Language;
+}): RevealPronoun {
+  const fatedBio =
+    language === "zh"
+    ? fatedCharacter?.bioBlurb.zh ?? fatedCharacter?.bioBlurb.en
+    : fatedCharacter?.bioBlurb.en ?? fatedCharacter?.bioBlurb.zh;
+  const bios = [character?.bio, fatedBio];
+  for (const bio of bios) {
+    const pronoun = inferPronounFromText(bio, language);
+    if (pronoun) {
+      return pronoun;
+    }
+  }
+
+  return "they";
+}
+
+function inferPronounFromText(text: string | undefined, language: Language): RevealPronoun | null {
+  if (!text) {
+    return null;
+  }
+
+  if (language === "zh") {
+    if (/她/.test(text)) {
+      return "she";
+    }
+    if (/他们|她们/.test(text)) {
+      return "they";
+    }
+    if (/他/.test(text)) {
+      return "he";
+    }
+    return null;
+  }
+
+  const normalized = text.toLowerCase();
+  if (/\b(she|her|hers|herself)\b/.test(normalized)) {
+    return "she";
+  }
+  if (/\b(they|them|their|theirs)\b/.test(normalized)) {
+    return "they";
+  }
+  if (/\b(he|him|his|himself)\b/.test(normalized)) {
+    return "he";
+  }
+  return null;
 }
 
 function EntryProgress({ palette, label }: { palette: TierPalette; label: string }) {

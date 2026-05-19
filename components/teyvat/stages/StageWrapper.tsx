@@ -9,15 +9,17 @@ interface Props {
   scrollable?: boolean;
   /** True when stage should be styled as locked/sealed (post-reveal questionnaire). */
   sealed?: boolean;
+  /** Snap stop behavior for this stage in scroll-snapped flow. */
+  snapStop?: "always" | "normal";
   children: React.ReactNode;
 }
 
-export function StageWrapper({ tier, palette, scrollable = false, sealed = false, children }: Props) {
+export function StageWrapper({ tier, palette, scrollable = false, sealed = false, snapStop = "normal", children }: Props) {
   return (
     <section data-tier={tier} style={{
       minHeight: "100vh",
       scrollSnapAlign: "start",
-      scrollSnapStop: "normal",
+      scrollSnapStop: snapStop,
       position: "relative",
       display: "flex",
       flexDirection: "column",

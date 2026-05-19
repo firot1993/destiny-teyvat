@@ -1,4 +1,5 @@
 "use client";
+import { type CSSProperties } from "react";
 import { StageWrapper } from "./StageWrapper";
 import type { TierPalette } from "@/lib/teyvat/stageTiers";
 import type { TeyvatStep } from "@/lib/teyvat/questionnaire";
@@ -8,52 +9,93 @@ interface Props {
   palette: TierPalette;
   step: TeyvatStep;
   stepNumber: number;
+  answeredCount: number;
   totalSteps: number;
   selectedValue: string | undefined;
   language: Language;
   sealed: boolean;
+  isActiveStage: boolean;
   onPick: (value: string) => void;
-  visionLabel: string;
+  onBack: () => void;
 }
 
 export function QuestionStage({
   palette,
   step,
   stepNumber,
+  answeredCount,
   totalSteps,
   selectedValue,
   language,
   sealed,
+  isActiveStage,
   onPick,
-  visionLabel: _visionLabel,
+  onBack,
 }: Props) {
   const question = step.title[language] ?? step.title.en;
+  const safeAnsweredCount = Math.min(Math.max(answeredCount, 0), totalSteps);
+  const segmentIndices = [...Array(totalSteps).keys()];
+  const chapterLabel = `${stepNumber} of ${totalSteps}`;
 
-  const eyebrow = `${stepNumber} of ${totalSteps}`;
+  const titleRevealStyle: CSSProperties = isActiveStage
+    ? {
+        animation: "fadeIn 200ms ease forwards",
+        opacity: 0,
+      }
+    : {};
 
-  const chevron: React.CSSProperties = {
-    position: "absolute",
-    bottom: 28,
+  const optionRevealStyle = (index: number): CSSProperties => {
+    if (isActiveStage) {
+      return {
+        animation: "questionChoiceReveal 300ms ease forwards",
+        animationDelay: `${200 + index * 50}ms`,
+        opacity: 0,
+        transform: "translateY(12px)",
+      };
+    }
+
+    return {};
+  };
+
+  const progressTrack: CSSProperties = {
+    width: "100%",
+    maxWidth: 360,
+    display: "grid",
+    gridTemplateColumns: `repeat(${totalSteps}, minmax(0, 1fr))`,
+    gap: 6,
+  };
+
+  const fallbackText = `Question ${chapterLabel}. ${safeAnsweredCount} of ${totalSteps} completed.`;
+
+  const chevronBase: CSSProperties = {
     left: "50%",
     transform: "translateX(-50%)",
-    fontSize: 22,
+    padding: 0,
+    border: "none",
+    background: "transparent",
     color: palette.gold,
-    opacity: 0.4,
+    lineHeight: 1,
     userSelect: "none",
   };
 
-  const scrollUpHint: React.CSSProperties = {
+  const scrollUpHint: CSSProperties = {
+    ...chevronBase,
     position: "absolute",
     top: 24,
-    left: "50%",
-    transform: "translateX(-50%)",
     fontSize: 18,
-    color: palette.gold,
-    opacity: 0.3,
-    userSelect: "none",
+    opacity: 0.5,
+    cursor: "pointer",
   };
 
-  const optionBase: React.CSSProperties = {
+  const chevron: CSSProperties = {
+    ...chevronBase,
+    position: "absolute",
+    bottom: 28,
+    fontSize: 22,
+    opacity: 0.5,
+  };
+
+  const optionBase: CSSProperties = {
     display: "block",
     width: "100%",
     padding: "13px 20px",
@@ -69,7 +111,7 @@ export function QuestionStage({
     transition: "border-color 200ms, color 200ms",
   };
 
-  const optionSelected: React.CSSProperties = {
+  const optionSelected: CSSProperties = {
     ...optionBase,
     color: palette.accent,
     fontStyle: "italic",
@@ -79,7 +121,7 @@ export function QuestionStage({
   };
 
   return (
-    <StageWrapper tier="reading" palette={palette} sealed={sealed}>
+    <StageWrapper tier="reading" palette={palette} sealed={sealed} snapStop="always">
       {/* Reading-tier vision wash */}
       <div style={{
         position: "absolute",
@@ -95,20 +137,74 @@ export function QuestionStage({
       <div style={{ position: "absolute", bottom: 16, left: 16, width: 18, height: 18, borderBottom: `1px solid ${palette.gold}`, borderLeft: `1px solid ${palette.gold}`, opacity: 0.5 }} />
       <div style={{ position: "absolute", bottom: 16, right: 16, width: 18, height: 18, borderBottom: `1px solid ${palette.gold}`, borderRight: `1px solid ${palette.gold}`, opacity: 0.5 }} />
 
-      <div style={scrollUpHint} aria-hidden>↑</div>
+      <button
+        type="button"
+        style={scrollUpHint}
+        onClick={onBack}
+        aria-label="Go back one stage"
+      >
+        ↑
+      </button>
 
       <div style={{ position: "relative", zIndex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 20, width: "100%", maxWidth: 560 }}>
-        {/* Eyebrow */}
-        <p style={{
-          fontFamily: "Georgia, serif",
-          fontSize: 11,
-          letterSpacing: "0.22em",
-          textTransform: "uppercase",
-          color: palette.gold,
-          margin: 0,
-        }}>
-          {eyebrow}
-        </p>
+        {/* Progress bar (visual primary signal) */}
+        <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+          <div
+            role="progressbar"
+            aria-label={fallbackText}
+            aria-valuemin={0}
+            aria-valuemax={totalSteps}
+            aria-valuenow={safeAnsweredCount}
+            style={progressTrack}
+          >
+            {segmentIndices.map((index) => {
+              const isFilled = index < safeAnsweredCount;
+              const isCurrent = index === stepNumber - 1;
+              const segmentStyle: React.CSSProperties = {
+                position: "relative",
+                height: 4,
+                borderRadius: 3,
+                border: `1px solid ${isFilled ? palette.accent : (isCurrent ? palette.gold : `${palette.gold}66`)}`,
+                background: isFilled ? palette.accent : "transparent",
+                transition: "background-color 240ms ease, border-color 240ms ease",
+                boxSizing: "border-box",
+              };
+              const indexLabelStyle: React.CSSProperties = {
+                position: "absolute",
+                top: 8,
+                left: "50%",
+                transform: "translateX(-50%)",
+                fontFamily: "Georgia, serif",
+                fontSize: 10,
+                letterSpacing: "0.16em",
+                color: isFilled ? palette.accent : palette.gold,
+                opacity: isCurrent ? 1 : 0.8,
+                whiteSpace: "nowrap",
+              };
+
+              return (
+                <span key={index} style={segmentStyle} aria-hidden>
+                  <span style={indexLabelStyle}>{index + 1}</span>
+                </span>
+              );
+            })}
+          </div>
+
+          {/* Lightweight text fallback for non-visual contexts */}
+          <p style={{
+            position: "absolute",
+            width: 1,
+            height: 1,
+            margin: -1,
+            padding: 0,
+            border: 0,
+            overflow: "hidden",
+            clip: "rect(0,0,0,0)",
+            whiteSpace: "nowrap",
+          }}>
+            {fallbackText}
+          </p>
+        </div>
 
         {/* Question */}
         <h3 style={{
@@ -118,19 +214,20 @@ export function QuestionStage({
           color: palette.ink,
           margin: 0,
           lineHeight: 1.3,
+          ...titleRevealStyle,
         }}>
           {question}
         </h3>
 
         {/* Options */}
         <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", marginTop: 8 }}>
-          {step.options.map((opt) => {
+          {step.options.map((opt, index) => {
             const label = opt.label[language] ?? opt.label.en;
             const isSelected = selectedValue === opt.value;
             return (
               <button
                 key={opt.id}
-                style={isSelected ? optionSelected : optionBase}
+                style={{ ...(isSelected ? optionSelected : optionBase), ...optionRevealStyle(index) }}
                 onClick={() => onPick(opt.value)}
                 disabled={sealed}
               >

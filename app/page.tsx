@@ -32,6 +32,9 @@ export default function Page() {
 
   const schema = adv.questionnaireSchema;
   const sealed = adv.isCommitted;
+  const answeredQuestionCount = schema.steps.reduce((count, step) => {
+    return adv.answers[step.id] ? count + 1 : count;
+  }, 0);
 
   const scenes = adv.adventure ? activeScenesOf(adv.adventure) : [];
 
@@ -72,6 +75,7 @@ export default function Page() {
 
   // 2. Questions — chapter context lives in each question's eyebrow
   schema.steps.forEach((step, i) => {
+    const questionStageIndex = stages.length;
     stages.push(
       <QuestionStage
         key={step.id}
@@ -79,14 +83,16 @@ export default function Page() {
         step={step}
         stepNumber={i + 1}
         totalSteps={schema.steps.length}
+        answeredCount={answeredQuestionCount}
         selectedValue={adv.answers[step.id]}
         language={lang}
         sealed={sealed}
+        isActiveStage={adv.currentStageIndex === questionStageIndex}
         onPick={(value) => {
           adv.updateAnswer(step.id, value);
           adv.scrollToStageDelta(1);
         }}
-        visionLabel={vision}
+        onBack={() => adv.scrollToStageDelta(-1)}
       />
     );
   });

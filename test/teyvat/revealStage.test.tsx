@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { RevealStage } from "@/components/teyvat/stages/RevealStage";
+import { I18nProvider } from "@/i18n";
 import { paletteFor } from "@/lib/teyvat/stageTiers";
 import type { CanonCharacter } from "@/lib/teyvat/canonRoster";
 import type { ParsedDirection } from "@/lib/teyvat/candidates";
@@ -45,9 +46,13 @@ const lumine: RevealedCharacter = {
   knownAssociate: "",
 };
 
+function renderWithI18n(ui: React.ReactElement) {
+  return render(<I18nProvider>{ui}</I18nProvider>);
+}
+
 describe("RevealStage", () => {
   it("uses a balanced split layout for the revealed story state", () => {
-    render(
+    renderWithI18n(
       <RevealStage
         palette={paletteFor("theatrical", "Electro")}
         loading={false}
@@ -70,7 +75,7 @@ describe("RevealStage", () => {
   });
 
   it("shows immediate progress feedback after walking into the revealed world", () => {
-    render(
+    renderWithI18n(
       <RevealStage
         palette={paletteFor("theatrical", "Anemo")}
         loading={false}

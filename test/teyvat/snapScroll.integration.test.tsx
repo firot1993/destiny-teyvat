@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { I18nProvider } from "@/i18n";
 import Page from "@/app/page";
+import { TEYVAT_STEPS } from "@/lib/teyvat/questionnaire";
 
 beforeEach(() => {
   localStorage.clear();
@@ -27,6 +28,17 @@ describe("snap-scroll page (smoke)", () => {
 
     // Story-progress sharpening veil sits above the snap document.
     expect(screen.getByTestId("story-progress-veil")).toBeInTheDocument();
+  });
+
+  it("keeps questionnaire content visible before a stage is marked active", () => {
+    render(
+      <I18nProvider>
+        <Page />
+      </I18nProvider>
+    );
+
+    expect(screen.getByRole("heading", { name: TEYVAT_STEPS[0].title.en })).toBeVisible();
+    expect(screen.getByRole("button", { name: TEYVAT_STEPS[0].options[0].label.en })).toBeVisible();
   });
 
   it("anchors one night-sky layer behind transparent snap stages", () => {

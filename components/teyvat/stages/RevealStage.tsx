@@ -1,10 +1,22 @@
 "use client";
+import { useEffect, useRef, useState } from "react";
 import { StageWrapper } from "./StageWrapper";
 import type { TierPalette } from "@/lib/teyvat/stageTiers";
 import type { RevealedCharacter } from "@/lib/teyvat/character";
 import type { CanonCharacter } from "@/lib/teyvat/canonRoster";
 import type { ParsedDirection } from "@/lib/teyvat/candidates";
 import type { Language } from "@/types";
+import { useI18n } from "@/i18n";
+
+type RevealPronoun = "he" | "she" | "they";
+
+const REVEAL_ENTRANCE_MS = 440;
+const REVEAL_ENTRANCE_TOTAL_MS = 600;
+const REVEAL_ENTRANCE_BUFFER_MS = 20;
+const REVEAL_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+const REVEAL_NAME_DELAY_MS = 140;
+const REVEAL_TITLE_DELAY_MS = 200;
+const REVEAL_META_CHIP_STAGGER_MS = 80;
 
 interface Props {
   palette: TierPalette;
@@ -37,8 +49,59 @@ export function RevealStage({
   committed,
   enteringWorld = false,
 }: Props) {
+  const { t } = useI18n();
   const isWish = directions !== null;
-  const enteringWorldLabel = language === "zh" ? "正在打开前路..." : "Opening the path...";
+  const isRevealReady = Boolean((character ?? fatedCharacter) && !loading);
+  const wasRevealReadyRef = useRef(isRevealReady);
+  const [isRevealCascadePlaying, setIsRevealCascadePlaying] = useState(false);
+  const makeRevealAnimation = (keyframe: string, delayMs = 0) =>
+    isRevealCascadePlaying
+      ? `${keyframe} ${Math.max(REVEAL_ENTRANCE_MS, REVEAL_ENTRANCE_TOTAL_MS - delayMs)}ms ${REVEAL_EASING} ${delayMs}ms both`
+      : undefined;
+
+  const revealMetaSources = {
+    nation: character?.nation ?? fatedCharacter?.nation,
+    vision: character?.vision ?? fatedCharacter?.vision,
+    weapon: character?.weapon ?? fatedCharacter?.weapon,
+  };
+  const revealMetaChips = [
+    revealMetaSources.nation,
+    revealMetaSources.vision,
+    revealMetaSources.weapon,
+  ].reduce<string[]>((chips, chip) => {
+    if (chip) {
+      chips.push(chip);
+    }
+    return chips;
+  }, []);
+  const enteringWorldLabel = t("reveal_opening_path");
+  const commitMessage = t("reveal_commit_prompt");
+  const commitCta = t("reveal_commit_cta");
+  const walkIntoWorldText = t("reveal_walk_into_world", {
+    possessive: t(`reveal_world_possessive_${resolveRevealPronoun({ character, fatedCharacter, language })}`),
+  });
+
+  useEffect(() => {
+    if (!isRevealReady) {
+      wasRevealReadyRef.current = false;
+      setIsRevealCascadePlaying(false);
+      return;
+    }
+
+    if (wasRevealReadyRef.current) {
+      return;
+    }
+
+    wasRevealReadyRef.current = true;
+    setIsRevealCascadePlaying(true);
+    const timer = window.setTimeout(() => {
+      setIsRevealCascadePlaying(false);
+    }, REVEAL_ENTRANCE_TOTAL_MS + REVEAL_ENTRANCE_BUFFER_MS);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [isRevealReady]);
 
   const displayName = isWish
     ? (language === "zh" && fatedCharacter?.nameZh ? fatedCharacter.nameZh : fatedCharacter?.nameEn ?? "")
@@ -108,10 +171,59 @@ export function RevealStage({
           50% { opacity: 1; transform: translateX(4px); }
         }
 
+        @keyframes revealPortraitEntrance {
+          0% {
+            transform: scale(0.92) translateY(16px);
+            opacity: 0.34;
+            filter: grayscale(1) saturate(0.42) brightness(0.56);
+          }
+          100% {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+            filter: none;
+          }
+        }
+
+        @keyframes revealNameEntrance {
+          0% {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes revealMetaChipEntrance {
+          0% {
+            opacity: 0;
+            transform: translateX(-10px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
         @media (prefers-reduced-motion: reduce) {
+          [data-reveal-animation="true"] * {
+            animation: none !important;
+            transition: none !important;
+          }
+
           [data-reveal-entry-feedback] * {
             animation: none !important;
             transition: none !important;
+          }
+
+          [data-reveal-animation="true"] [data-reveal-portrait],
+          [data-reveal-animation="true"] [data-reveal-name],
+          [data-reveal-animation="true"] [data-reveal-title],
+          [data-reveal-animation="true"] [data-reveal-meta-chip] {
+            opacity: 1 !important;
+            transform: none !important;
+            filter: none !important;
           }
         }
       `}</style>
@@ -131,7 +243,7 @@ export function RevealStage({
             ✦
           </div>
           <p style={{ fontFamily: "Georgia, serif", fontStyle: "italic", color: palette.inkSoft, fontSize: 14, letterSpacing: "0.1em" }}>
-            the wind is listening…
+            {t("reveal_loading_copy")}
           </p>
           <style>{`
             @keyframes breathe {
@@ -159,16 +271,28 @@ export function RevealStage({
             ✦
           </div>
           <p style={{ fontFamily: "Georgia, serif", fontStyle: "italic", color: palette.inkSoft, fontSize: 15, letterSpacing: "0.06em", maxWidth: 320 }}>
-            The stars have read your answers. Are you ready to learn your fate?
+            {commitMessage}
           </p>
           <button style={primaryBtn} onClick={onCommit}>
-            Reveal my destiny
+            {commitCta}
           </button>
         </div>
       ) : (
-        <div data-testid="reveal-layout" data-reveal-layout style={revealLayoutStyle}>
+          <div
+            data-testid="reveal-layout"
+            data-reveal-layout
+            data-reveal-animation={isRevealCascadePlaying ? "true" : undefined}
+            style={revealLayoutStyle}
+          >
           {/* Silhouette / portrait area */}
-          <div data-testid="reveal-portrait" data-reveal-portrait style={portraitFrameStyle(palette, Boolean(imageUrl))}>
+          <div
+            data-testid="reveal-portrait"
+            data-reveal-portrait
+            style={{
+              ...portraitFrameStyle(palette, Boolean(imageUrl)),
+              animation: makeRevealAnimation("revealPortraitEntrance", 0),
+            }}
+          >
             {imageUrl ? (
               <img
                 src={imageUrl}
@@ -187,39 +311,48 @@ export function RevealStage({
           {/* Content */}
           <div data-testid="reveal-copy" data-reveal-copy style={revealCopyStyle}>
             {/* Name + epithet */}
-            <h2 style={{
-              fontFamily: "Georgia, serif",
-              fontSize: "clamp(44px, 5vw, 72px)",
-              fontWeight: 300,
-              letterSpacing: "0.04em",
-              color: palette.ink,
-              margin: 0,
-              lineHeight: 1,
-              textWrap: "balance",
-            }}>
-              {displayName}
-            </h2>
+            <h2
+              data-reveal-name
+              style={{
+                fontFamily: "Georgia, serif",
+                fontSize: "clamp(44px, 5vw, 72px)",
+                fontWeight: 300,
+                letterSpacing: "0.04em",
+                color: palette.ink,
+                margin: 0,
+                lineHeight: 1,
+                textWrap: "balance",
+                animation: makeRevealAnimation("revealNameEntrance", REVEAL_NAME_DELAY_MS),
+                willChange: "opacity, transform",
+              }}>
+                {displayName}
+              </h2>
 
             {displayTitle && (
-              <p style={{
+              <p
+                data-reveal-title
+                style={{
                 fontFamily: "Georgia, serif",
                 fontStyle: "italic",
                 fontSize: 16,
                 letterSpacing: "0.08em",
                 color: palette.goldBright,
                 margin: 0,
+                animation: makeRevealAnimation("revealNameEntrance", REVEAL_TITLE_DELAY_MS),
+                willChange: "opacity, transform",
               }}>
                 {language === "zh" ? `「${displayTitle}」` : `— ${displayTitle} —`}
               </p>
             )}
 
             {/* Nation row */}
-            {(character?.nation || fatedCharacter?.nation) && (
+            {revealMetaSources.nation && (
               <div data-reveal-meta style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 2 }}>
-                {[character?.nation ?? fatedCharacter?.nation, character?.vision ?? fatedCharacter?.vision, character?.weapon ?? fatedCharacter?.weapon]
-                  .filter(Boolean)
-                  .map((chip) => (
-                    <span key={chip} style={{
+                {revealMetaChips.map((chip, metaIndex) => (
+                  <span
+                    key={chip}
+                    data-reveal-meta-chip
+                    style={{
                       padding: "3px 10px",
                       border: `1px solid ${palette.gold}60`,
                       borderRadius: 20,
@@ -227,7 +360,10 @@ export function RevealStage({
                       letterSpacing: "0.12em",
                       textTransform: "uppercase",
                       color: palette.inkSoft,
-                    }}>
+                      animation: makeRevealAnimation("revealMetaChipEntrance", metaIndex * REVEAL_META_CHIP_STAGGER_MS),
+                      willChange: "opacity, transform",
+                    }}
+                  >
                       {chip}
                     </span>
                   ))}
@@ -288,7 +424,7 @@ export function RevealStage({
                   disabled={enteringWorld}
                   aria-busy={enteringWorld}
                 >
-                  {enteringWorld ? enteringWorldLabel : "Walk into her world ↓"}
+                  {enteringWorld ? enteringWorldLabel : walkIntoWorldText}
                 </button>
                 {enteringWorld && (
                   <EntryProgress palette={palette} label={enteringWorldLabel} />
@@ -300,6 +436,61 @@ export function RevealStage({
       )}
     </StageWrapper>
   );
+}
+
+function resolveRevealPronoun({
+  character,
+  fatedCharacter,
+  language,
+}: {
+  character: RevealedCharacter | null;
+  fatedCharacter: CanonCharacter | null;
+  language: Language;
+}): RevealPronoun {
+  const fatedBio =
+    language === "zh"
+    ? fatedCharacter?.bioBlurb.zh ?? fatedCharacter?.bioBlurb.en
+    : fatedCharacter?.bioBlurb.en ?? fatedCharacter?.bioBlurb.zh;
+  const bios = [character?.bio, fatedBio];
+  for (const bio of bios) {
+    const pronoun = inferPronounFromText(bio, language);
+    if (pronoun) {
+      return pronoun;
+    }
+  }
+
+  return "they";
+}
+
+function inferPronounFromText(text: string | undefined, language: Language): RevealPronoun | null {
+  if (!text) {
+    return null;
+  }
+
+  if (language === "zh") {
+    if (/她/.test(text)) {
+      return "she";
+    }
+    if (/他们|她们/.test(text)) {
+      return "they";
+    }
+    if (/他/.test(text)) {
+      return "he";
+    }
+    return null;
+  }
+
+  const normalized = text.toLowerCase();
+  if (/\b(she|her|hers|herself)\b/.test(normalized)) {
+    return "she";
+  }
+  if (/\b(they|them|their|theirs)\b/.test(normalized)) {
+    return "they";
+  }
+  if (/\b(he|him|his|himself)\b/.test(normalized)) {
+    return "he";
+  }
+  return null;
 }
 
 function EntryProgress({ palette, label }: { palette: TierPalette; label: string }) {
